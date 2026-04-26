@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoreCRM — AI-Native Strategy Research Report 2025–2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181c24;
+    --border: #252a35;
+    --accent: #00e5a0;
+    --accent2: #4d6aff;
+    --accent3: #ff6b35;
+    --warn: #ffcc00;
+    --text: #e8eaf0;
+    --muted: #7a8197;
+    --tag-bg: rgba(0,229,160,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'IBM Plex Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(10,12,16,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex; align-items: center; gap: 24px;
+    height: 52px;
+  }
+  nav .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px; color: var(--accent); letter-spacing: -0.5px; }
+  nav .sep { color: var(--border); }
+  nav a { color: var(--muted); text-decoration: none; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; transition: color 0.2s; }
+  nav a:hover { color: var(--accent); }
+  nav .ml { margin-left: auto; display: flex; gap: 12px; align-items: center; }
+  nav .badge { background: var(--accent); color: #000; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 2px; letter-spacing: 1px; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 100px 64px 64px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 60% 40%, rgba(77,106,255,0.08) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 40% at 20% 80%, rgba(0,229,160,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero-eyebrow { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 24px; }
+  .hero h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(48px, 6vw, 88px);
+    font-weight: 300;
+    line-height: 1.05;
+    letter-spacing: -2px;
+    max-width: 900px;
+    margin-bottom: 32px;
+  }
+  .hero h1 em { font-style: italic; color: var(--accent); }
+  .hero-sub { max-width: 580px; color: var(--muted); font-size: 13px; line-height: 1.8; margin-bottom: 48px; }
+  .hero-meta { display: flex; gap: 32px; flex-wrap: wrap; }
+  .hero-stat { border-left: 2px solid var(--accent); padding-left: 16px; }
+  .hero-stat .n { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: var(--text); }
+  .hero-stat .l { font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  .grid-bg {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.25;
+  }
+
+  /* SECTIONS */
+  .section {
+    max-width: 1200px; margin: 0 auto;
+    padding: 80px 32px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-label { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  .section-title { font-family: 'Syne', sans-serif; font-size: clamp(24px, 3vw, 40px); font-weight: 700; line-height: 1.15; margin-bottom: 32px; }
+  .section-intro { color: var(--muted); max-width: 700px; margin-bottom: 48px; line-height: 1.8; }
+
+  /* TABLES */
+  .table-wrap { overflow-x: auto; margin: 32px 0; border-radius: 8px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: var(--surface2); color: var(--accent); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; padding: 12px 16px; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 10px 16px; border-bottom: 1px solid rgba(37,42,53,0.5); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .exists { color: var(--accent); font-weight: 600; }
+  .missing { color: #ff4d6b; }
+  .partial { color: var(--warn); }
+  .na { color: var(--muted); }
+
+  /* CARDS */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 32px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    transition: border-color 0.2s, transform 0.2s;
+    position: relative;
+  }
+  .card:hover { border-color: var(--accent2); transform: translateY(-2px); }
+  .card-tag { display: inline-block; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #000; background: var(--accent); padding: 2px 8px; border-radius: 2px; margin-bottom: 12px; font-weight: 700; }
+  .card-tag.blue { background: var(--accent2); }
+  .card-tag.orange { background: var(--accent3); }
+  .card-tag.yellow { background: var(--warn); }
+  .card h3 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .card p { color: var(--muted); font-size: 12px; line-height: 1.7; margin-bottom: 12px; }
+  .card ul { list-style: none; }
+  .card ul li { font-size: 12px; color: var(--muted); padding: 3px 0; padding-left: 14px; position: relative; }
+  .card ul li::before { content: '→'; position: absolute; left: 0; color: var(--accent); font-size: 10px; }
+  .card .complexity { position: absolute; top: 16px; right: 16px; font-size: 10px; letter-spacing: 1px; color: var(--muted); border: 1px solid var(--border); padding: 2px 8px; border-radius: 2px; }
+
+  /* MODULE ANALYSIS BLOCKS */
+  .module-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .module-header {
+    display: flex; align-items: center; gap: 16px;
+    padding: 18px 24px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+  .module-header:hover { background: rgba(255,255,255,0.04); }
+  .module-icon { width: 36px; height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .module-header h3 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; flex: 1; }
+  .module-header .chevron { color: var(--muted); transition: transform 0.3s; font-size: 12px; }
+  .module-header.open .chevron { transform: rotate(180deg); }
+  .module-body { display: none; padding: 24px; }
+  .module-body.open { display: block; }
+  .feature-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  @media (max-width: 640px) { .feature-list { grid-template-columns: 1fr; } }
+  .feature-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--muted); }
+  .feature-item .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .dot-green { background: var(--accent); }
+  .dot-red { background: #ff4d6b; }
+  .dot-yellow { background: var(--warn); }
+  .dot-blue { background: var(--accent2); }
+  .sub-h { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin: 16px 0 8px; }
+
+  /* LLM FEATURE BLOCKS */
+  .llm-card {
+    background: linear-gradient(135deg, rgba(77,106,255,0.08) 0%, rgba(0,229,160,0.05) 100%);
+    border: 1px solid rgba(77,106,255,0.25);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .llm-card h4 { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 8px; color: var(--accent2); }
+  .prompt-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 16px;
+    font-size: 11px;
+    color: #a0b0c8;
+    margin: 8px 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .schema-box {
+    background: var(--bg);
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+    padding: 12px 16px;
+    font-size: 11px;
+    color: var(--warn);
+    margin: 8px 0;
+  }
+  .guardrail-list { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .guardrail { background: rgba(255,204,0,0.1); border: 1px solid rgba(255,204,0,0.3); border-radius: 3px; padding: 3px 10px; font-size: 10px; color: var(--warn); letter-spacing: 1px; text-transform: uppercase; }
+
+  /* ROADMAP */
+  .roadmap-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 32px; }
+  @media (max-width: 900px) { .roadmap-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 540px) { .roadmap-grid { grid-template-columns: 1fr; } }
+  .phase-col { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .phase-header { padding: 16px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+  .phase-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .phase-header span { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; }
+  .phase-header small { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  .phase-items { padding: 16px 20px; }
+  .phase-item { font-size: 11px; color: var(--muted); padding: 4px 0; border-bottom: 1px solid rgba(37,42,53,0.4); display: flex; align-items: flex-start; gap: 6px; }
+  .phase-item:last-child { border-bottom: none; }
+  .phase-item::before { content: '·'; color: var(--accent); font-size: 14px; line-height: 1.4; flex-shrink: 0; }
+
+  /* TOP 25 */
+  .top25-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 32px; }
+  .top25-item { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 16px 18px; display: flex; gap: 12px; align-items: flex-start; }
+  .top25-num { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: var(--border); line-height: 1; flex-shrink: 0; }
+  .top25-content h4 { font-size: 13px; font-weight: 600; font-family: 'Syne', sans-serif; margin-bottom: 4px; }
+  .top25-content p { font-size: 11px; color: var(--muted); }
+  .top25-item.p0 { border-color: var(--accent); }
+  .top25-item.p0 .top25-num { color: var(--accent); }
+
+  /* TAGS */
+  .tag { display: inline-block; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 10px; border-radius: 3px; margin: 2px; font-weight: 600; }
+  .tag-green { background: rgba(0,229,160,0.12); color: var(--accent); border: 1px solid rgba(0,229,160,0.2); }
+  .tag-blue { background: rgba(77,106,255,0.12); color: var(--accent2); border: 1px solid rgba(77,106,255,0.2); }
+  .tag-orange { background: rgba(255,107,53,0.12); color: var(--accent3); border: 1px solid rgba(255,107,53,0.2); }
+  .tag-yellow { background: rgba(255,204,0,0.1); color: var(--warn); border: 1px solid rgba(255,204,0,0.2); }
+
+  /* DATA MODEL */
+  .entity-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 16px; margin-bottom: 12px; }
+  .entity-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+  .entity-fields { display: flex; flex-wrap: wrap; gap: 6px; }
+  .field { background: var(--bg); border: 1px solid var(--border); border-radius: 3px; padding: 3px 10px; font-size: 11px; color: var(--muted); }
+  .field.key { color: var(--accent2); border-color: rgba(77,106,255,0.3); }
+
+  /* DIVIDERS */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 24px; }
+  @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* API ENDPOINTS */
+  .endpoint { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid rgba(37,42,53,0.4); font-size: 12px; }
+  .method { font-size: 10px; font-weight: 700; letter-spacing: 1px; padding: 2px 8px; border-radius: 3px; flex-shrink: 0; margin-top: 1px; }
+  .method.get { background: rgba(0,229,160,0.15); color: var(--accent); }
+  .method.post { background: rgba(77,106,255,0.15); color: var(--accent2); }
+  .method.put { background: rgba(255,204,0,0.12); color: var(--warn); }
+  .method.del { background: rgba(255,107,53,0.15); color: var(--accent3); }
+  .ep-path { color: var(--text); font-family: 'IBM Plex Mono', monospace; }
+  .ep-desc { color: var(--muted); font-size: 11px; }
+
+  /* KPI TABLE */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 24px; }
+  .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 18px; }
+  .kpi-card .kn { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--accent); }
+  .kpi-card .kt { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .kpi-card .kd { font-size: 11px; color: var(--text); margin-top: 6px; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* SOURCE BADGES */
+  .source-link { display: inline-block; font-size: 10px; color: var(--accent2); border: 1px solid rgba(77,106,255,0.2); border-radius: 3px; padding: 1px 8px; margin: 2px; text-decoration: none; }
+  .source-link:hover { background: rgba(77,106,255,0.1); }
+
+  /* PRINT-STYLE CALLOUT */
+  .callout { background: rgba(0,229,160,0.05); border: 1px solid rgba(0,229,160,0.2); border-radius: 6px; padding: 16px 20px; margin: 16px 0; }
+  .callout.warn { background: rgba(255,204,0,0.05); border-color: rgba(255,204,0,0.2); }
+  .callout.danger { background: rgba(255,77,107,0.05); border-color: rgba(255,77,107,0.2); }
+  .callout-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 6px; }
+  .callout.warn .callout-label { color: var(--warn); }
+  .callout.danger .callout-label { color: #ff4d6b; }
+
+  .toc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin-top: 24px; }
+  .toc-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 10px 14px; text-decoration: none; color: var(--muted); font-size: 11px; transition: all 0.2s; display: flex; gap: 8px; align-items: center; }
+  .toc-item:hover { border-color: var(--accent); color: var(--text); }
+  .toc-num { color: var(--accent); font-size: 10px; font-weight: 700; font-family: 'Syne', sans-serif; }
+
+  footer { padding: 48px 32px; text-align: center; color: var(--muted); font-size: 11px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="logo">CoreCRM</span>
+  <span class="sep">|</span>
+  <a href="#competitive">Competitive</a>
+  <a href="#modules">Modules</a>
+  <a href="#new-modules">New Modules</a>
+  <a href="#llm">LLM Blueprint</a>
+  <a href="#technical">Technical</a>
+  <a href="#roadmap">Roadmap</a>
+  <a href="#top25">Top 25</a>
+  <div class="ml">
+    <span class="badge">AI-NATIVE STRATEGY REPORT</span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="grid-bg"></div>
+  <div class="hero-eyebrow">Senior Product Strategy × CRM Architecture × Competitive Intelligence</div>
+  <h1>CoreCRM <em>Expansion</em><br>Research Report</h1>
+  <p class="hero-sub">Deep-dive competitive analysis of HubSpot, Salesforce, Zoho, Pipedrive, Freshsales, Monday CRM, Close & Copper — synthesized into a maximum-coverage roadmap for the AI-native SaaS CRM of 2025–2026.</p>
+  <div class="hero-meta">
+    <div class="hero-stat"><div class="n">9</div><div class="l">Existing Modules</div></div>
+    <div class="hero-stat"><div class="n">18+</div><div class="l">Proposed New Modules</div></div>
+    <div class="hero-stat"><div class="n">100+</div><div class="l">Net-New Features</div></div>
+    <div class="hero-stat"><div class="n">50+</div><div class="l">LLM Use Cases</div></div>
+    <div class="hero-stat"><div class="n">P0→P3</div><div class="l">4-Phase Roadmap</div></div>
+  </div>
+</section>
+
+<!-- TOC -->
+<div class="section" id="toc" style="padding-top:64px;padding-bottom:48px;">
+  <div class="section-label">Navigation</div>
+  <div class="section-title">Report Contents</div>
+  <div class="toc-grid">
+    <a href="#competitive" class="toc-item"><span class="toc-num">A</span> Competitive Feature Matrix</a>
+    <a href="#modules" class="toc-item"><span class="toc-num">B</span> Module Gap Analysis</a>
+    <a href="#new-modules" class="toc-item"><span class="toc-num">C</span> New Modules Catalogue</a>
+    <a href="#llm" class="toc-item"><span class="toc-num">D</span> LLM Feature Blueprint</a>
+    <a href="#technical" class="toc-item"><span class="toc-num">E</span> Technical Expansion</a>
+    <a href="#workflow" class="toc-item"><span class="toc-num">F</span> Workflow Automations</a>
+    <a href="#analytics" class="toc-item"><span class="toc-num">G</span> Analytics & KPIs</a>
+    <a href="#security" class="toc-item"><span class="toc-num">H</span> Security & Compliance</a>
+    <a href="#roadmap" class="toc-item"><span class="toc-num">I</span> Phased Roadmap</a>
+    <a href="#top25" class="toc-item"><span class="toc-num">J</span> Top 25 Must-Build</a>
+  </div>
+</div>
+
+<!-- SECTION A: COMPETITIVE MATRIX -->
+<div class="section" id="competitive">
+  <div class="section-label">Section A</div>
+  <div class="section-title">Competitive Feature Matrix</div>
+  <div class="section-intro">Feature-level mapping against 7 leading CRMs. Sources:
+    <a href="https://www.hubspot.com/products/crm" class="source-link">HubSpot</a>
+    <a href="https://www.salesforce.com/artificial-intelligence/" class="source-link">Salesforce</a>
+    <a href="https://prospeo.io/s/pipedrive-vs-zoho-crm" class="source-link">Pipedrive/Zoho</a>
+    <a href="https://www.capterra.com/resources/crm-and-ai-user-guide/" class="source-link">Capterra AI CRM Guide</a>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Feature / Module</th>
+          <th>CoreCRM</th>
+          <th>HubSpot</th>
+          <th>Salesforce</th>
+          <th>Zoho CRM</th>
+          <th>Pipedrive</th>
+          <th>Freshsales</th>
+          <th>Monday CRM</th>
+          <th>Close</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="9" style="background:var(--surface2);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);padding:8px 16px;">CORE CRM</td></tr>
+        <tr><td>Contact Management</td><td class="exists">✓ Exists</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td></tr>
+        <tr><td>Lead Management</td><td class="exists">✓ Exists</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="partial">Partial</td><td class="exists">✓</td><td class="partial">Partial</td><td class="exists">✓</td></tr>
+        <tr><td>Deals / Pipeline (Kanban)</td><td class="exists">✓ Exists</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓ Best-in-class</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td></tr>
+        <tr><td>Accounts / Companies</td><td class="exists">✓ Exists</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="partial">Partial</td></tr>
+        <tr><td>Activities / Tasks</td><td class="exists">✓ Exists</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td></tr>
+        <tr><td>Tickets / Help Desk</td><td class="exists">✓ Exists</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="missing">✗ Missing</td><td class="exists">✓</td><td class="partial">Partial</td><td class="missing">✗</td></tr>
+        <tr><td>Campaigns</td><td class="exists">✓ Exists</td><td class="exists">✓ Full Marketing Hub</td><td class="exists">✓ Marketing Cloud</td><td class="exists">✓</td><td class="partial">Add-on</td><td class="exists">✓</td><td class="partial">Partial</td><td class="missing">✗</td></tr>
+        <tr><td>Reports / Dashboards</td><td class="exists">✓ Exists</td><td class="exists">✓</td><td class="exists">✓ Advanced</td><td class="exists">✓</td><td class="partial">Weak</td><td class="exists">✓</td><td class="exists">✓</td><td class="partial">Partial</td></tr>
+        <tr><td colspan="9" style="background:var(--surface2);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);padding:8px 16px;">AI / INTELLIGENCE</td></tr>
+        <tr><td>AI Lead Scoring</td><td class="missing">✗ Missing</td><td class="partial">Pro+</td><td class="exists">✓ Einstein</td><td class="exists">✓ Zia (Ent)</td><td class="partial">Beta</td><td class="exists">✓</td><td class="missing">✗</td><td class="missing">✗</td></tr>
+        <tr><td>AI Email Writer</td><td class="missing">✗ Missing</td><td class="exists">✓ Breeze</td><td class="exists">✓</td><td class="exists">✓</td><td class="partial">Partial</td><td class="exists">✓</td><td class="partial">Partial</td><td class="missing">✗</td></tr>
+        <tr><td>AI Deal Intelligence</td><td class="missing">✗ Missing</td><td class="partial">Partial</td><td class="exists">✓ Agentforce</td><td class="exists">✓ Zia</td><td class="partial">Beta</td><td class="partial">Partial</td><td class="missing">✗</td><td class="missing">✗</td></tr>
+        <tr><td>Conversation Intelligence</td><td class="missing">✗ Missing</td><td class="partial">Add-on</td><td class="exists">✓ Einstein</td><td class="partial">Partial</td><td class="missing">✗</td><td class="exists">✓</td><td class="missing">✗</td><td class="exists">✓ Built-in</td></tr>
+        <tr><td>AI Copilot / Chat Assistant</td><td class="missing">✗ Missing</td><td class="exists">✓ Breeze Copilot</td><td class="exists">✓ Agentforce</td><td class="exists">✓ Zia</td><td class="missing">✗</td><td class="partial">Partial</td><td class="missing">✗</td><td class="missing">✗</td></tr>
+        <tr><td>Predictive Forecasting</td><td class="missing">✗ Missing</td><td class="partial">Pro+</td><td class="exists">✓</td><td class="exists">✓ Ent</td><td class="missing">✗</td><td class="exists">✓</td><td class="missing">✗</td><td class="missing">✗</td></tr>
+        <tr><td colspan="9" style="background:var(--surface2);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);padding:8px 16px;">MISSING FROM CORECRM (Critical Gaps)</td></tr>
+        <tr><td>Email Tracking / Sequences</td><td class="missing">✗ Missing</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="partial">Partial</td><td class="exists">✓ Core feature</td></tr>
+        <tr><td>Meeting Scheduler</td><td class="missing">✗ Missing</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td></tr>
+        <tr><td>Live Chat / Chatbot Builder</td><td class="missing">✗ Missing</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="missing">✗</td><td class="exists">✓</td><td class="missing">✗</td><td class="missing">✗</td></tr>
+        <tr><td>Sales Forecasting</td><td class="missing">✗ Missing</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="missing">✗</td><td class="exists">✓</td><td class="missing">✗</td><td class="exists">✓</td></tr>
+        <tr><td>CPQ / Quotes</td><td class="missing">✗ Missing</td><td class="partial">Partial</td><td class="exists">✓</td><td class="exists">✓</td><td class="partial">Add-on</td><td class="partial">Partial</td><td class="missing">✗</td><td class="missing">✗</td></tr>
+        <tr><td>Customer Portal / Self-Service</td><td class="missing">✗ Missing</td><td class="partial">Partial</td><td class="exists">✓</td><td class="exists">✓</td><td class="missing">✗</td><td class="exists">✓</td><td class="missing">✗</td><td class="missing">✗</td></tr>
+        <tr><td>Product / SKU Catalog</td><td class="missing">✗ Missing</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="missing">✗</td><td class="partial">Partial</td><td class="missing">✗</td><td class="missing">✗</td></tr>
+        <tr><td>Territory Management</td><td class="missing">✗ Missing</td><td class="partial">Partial</td><td class="exists">✓</td><td class="exists">✓ Ent</td><td class="missing">✗</td><td class="missing">✗</td><td class="missing">✗</td><td class="missing">✗</td></tr>
+        <tr><td>Integration Marketplace</td><td class="missing">✗ Missing</td><td class="exists">✓ 2000+ apps</td><td class="exists">✓ AppExchange</td><td class="exists">✓ 500+</td><td class="exists">✓ 250+</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td></tr>
+        <tr><td>Knowledge Base</td><td class="missing">✗ Missing</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="missing">✗</td><td class="exists">✓</td><td class="missing">✗</td><td class="missing">✗</td></tr>
+        <tr><td>Subscription / Revenue Mgmt</td><td class="missing">✗ Missing</td><td class="partial">Partial</td><td class="exists">✓ Revenue Cloud</td><td class="partial">Partial</td><td class="missing">✗</td><td class="missing">✗</td><td class="missing">✗</td><td class="missing">✗</td></tr>
+        <tr><td>Mobile App (iOS/Android)</td><td class="missing">✗ Missing</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td><td class="exists">✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-label">⚠ Key Strategic Risk</div>
+    According to Capterra's 2025 survey, <strong>90% of CRM buyers now require AI features</strong>. CoreCRM's current absence of any AI layer (scoring, copilot, generation, prediction) is the single most critical competitive gap. This must be addressed in P0.
+  </div>
+</div>
+
+<!-- SECTION B: MODULE GAP ANALYSIS -->
+<div class="section" id="modules">
+  <div class="section-label">Section B</div>
+  <div class="section-title">Existing Module Gap Analysis</div>
+  <div class="section-intro">For each of the 9 existing CoreCRM modules: current capabilities mapped, table-stakes gaps identified, advanced gaps, enterprise gaps, and top improvement features.</div>
+
+  <!-- DASHBOARD MODULE -->
+  <div class="module-block">
+    <div class="module-header" onclick="toggleModule(this)">
+      <div class="module-icon" style="background:rgba(0,229,160,0.1);">📊</div>
+      <h3>Dashboard</h3>
+      <span class="tag tag-green">Existing</span>
+      <span style="font-size:11px;color:var(--muted);margin-left:auto;">12 gaps identified</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="module-body">
+      <div class="sub-h">Current Capabilities</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-green"></div>Basic metric cards (pipeline value, deals count)</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Static chart widgets (Recharts)</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Role-based view differences</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Date range filtering</div>
+      </div>
+      <div class="sub-h">Missing — Table Stakes</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-red"></div>Drag-and-drop widget layout (DnD Kit available)</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Custom dashboard creation per user</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Real-time data refresh / live counters</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Cross-module KPI linking</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Goal / target tracking with progress bars</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Team-level vs personal dashboards</div>
+      </div>
+      <div class="sub-h">Missing — Advanced / AI</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-yellow"></div>AI-generated daily briefing (NLG summary)</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Anomaly detection alerts ("revenue down 20% vs last week")</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Predictive revenue forecast widget</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Natural language query ("show me deals closing this quarter")</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Shareable dashboard links (public/private)</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Scheduled PDF/email dashboard reports</div>
+      </div>
+      <div class="sub-h">Missing — Enterprise</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-blue"></div>Executive-only dashboard tier with consolidated org view</div>
+        <div class="feature-item"><div class="dot dot-blue"></div>Multi-team / territory rollup dashboards</div>
+        <div class="feature-item"><div class="dot dot-blue"></div>Embedded BI export (CSV, XLSX, API)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTACTS MODULE -->
+  <div class="module-block">
+    <div class="module-header" onclick="toggleModule(this)">
+      <div class="module-icon" style="background:rgba(77,106,255,0.1);">👤</div>
+      <h3>Contacts</h3>
+      <span class="tag tag-green">Existing</span>
+      <span style="font-size:11px;color:var(--muted);margin-left:auto;">20 gaps identified</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="module-body">
+      <div class="sub-h">Current Capabilities</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-green"></div>Contact CRUD with standard fields</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Account/Deal relationship links</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Activity timeline</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Basic search and filter</div>
+      </div>
+      <div class="sub-h">Missing — Table Stakes</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-red"></div>Custom fields (dropdowns, multi-select, date)</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Contact scoring / health score</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Duplicate detection & merge</div>
+        <div class="feature-item"><div class="dot dot-red"></div>CSV import/export with field mapping</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Contact segmentation / smart lists</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Email open/click tracking per contact</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Last contact date auto-tracking</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Contact owner assignment & reassignment</div>
+      </div>
+      <div class="sub-h">Missing — Advanced / AI</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-yellow"></div>AI contact enrichment (job title, LinkedIn, company size from email domain)</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>AI summary: "This contact is a VP at Acme, last engaged 3 days ago, 2 open deals"</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Relationship intelligence map (org chart inference)</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Churn risk scoring per contact</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Next best action recommendation</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Sentiment tracking from email/ticket history</div>
+      </div>
+      <div class="sub-h">Missing — Enterprise</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-blue"></div>GDPR consent management per contact</div>
+        <div class="feature-item"><div class="dot dot-blue"></div>Data residency controls (EU/US/APAC)</div>
+        <div class="feature-item"><div class="dot dot-blue"></div>Field-level permission controls</div>
+        <div class="feature-item"><div class="dot dot-blue"></div>Contact deduplication API for bulk imports</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEADS MODULE -->
+  <div class="module-block">
+    <div class="module-header" onclick="toggleModule(this)">
+      <div class="module-icon" style="background:rgba(255,107,53,0.1);">🎯</div>
+      <h3>Leads</h3>
+      <span class="tag tag-green">Existing</span>
+      <span style="font-size:11px;color:var(--muted);margin-left:auto;">18 gaps identified</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="module-body">
+      <div class="sub-h">Current Capabilities</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-green"></div>Lead list with status tracking</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Lead-to-contact/deal conversion</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Source field tracking</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Owner assignment</div>
+      </div>
+      <div class="sub-h">Missing — Table Stakes</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-red"></div>Web-to-lead capture forms</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Lead routing rules (round-robin, geo, industry)</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Lead scoring (rules-based)</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Lead nurture sequences / drip email</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Lead source attribution multi-touch</div>
+        <div class="feature-item"><div class="dot dot-red"></div>SLA timers for lead follow-up</div>
+      </div>
+      <div class="sub-h">Missing — Advanced / AI</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-yellow"></div>AI lead scoring (behavioral + firmographic signals)</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>AI lead qualification assistant ("Is this ICP?")</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Predicted lead-to-deal conversion probability</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Auto-enrichment via domain scraping</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Intent signal integration (website visits, content downloads)</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>AI-generated outreach email draft on lead creation</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEALS MODULE -->
+  <div class="module-block">
+    <div class="module-header" onclick="toggleModule(this)">
+      <div class="module-icon" style="background:rgba(255,204,0,0.1);">💼</div>
+      <h3>Deals</h3>
+      <span class="tag tag-green">Existing</span>
+      <span style="font-size:11px;color:var(--muted);margin-left:auto;">22 gaps identified</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="module-body">
+      <div class="sub-h">Current Capabilities</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-green"></div>Kanban pipeline view (DnD Kit)</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Deal stages with probability</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Deal value, close date, owner</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Contact/Account linking</div>
+      </div>
+      <div class="sub-h">Missing — Table Stakes</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-red"></div>Multiple pipelines (sales, partnership, renewal)</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Deal rotting alerts (no activity in N days)</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Required fields per pipeline stage</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Win/loss reason capture on close</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Products/line items on deals</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Deal velocity tracking</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Stage-to-stage conversion funnel view</div>
+      </div>
+      <div class="sub-h">Missing — Advanced / AI</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-yellow"></div>AI deal health score with risk factors</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Win probability prediction (ML model)</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>AI-generated deal brief for sales calls</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Competitive intelligence surface (detect competitor mentions)</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Revenue forecast with confidence intervals</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Similar won deals recommendation engine</div>
+      </div>
+      <div class="sub-h">Missing — Enterprise</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-blue"></div>Deal approval workflows (manager sign-off)</div>
+        <div class="feature-item"><div class="dot dot-blue"></div>Multi-currency support with live FX</div>
+        <div class="feature-item"><div class="dot dot-blue"></div>Quote / CPQ generation from deal</div>
+        <div class="feature-item"><div class="dot dot-blue"></div>Commission calculation engine</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TICKETS MODULE -->
+  <div class="module-block">
+    <div class="module-header" onclick="toggleModule(this)">
+      <div class="module-icon" style="background:rgba(77,106,255,0.1);">🎫</div>
+      <h3>Tickets</h3>
+      <span class="tag tag-green">Existing</span>
+      <span style="font-size:11px;color:var(--muted);margin-left:auto;">19 gaps identified</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="module-body">
+      <div class="sub-h">Current Capabilities</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-green"></div>Ticket creation and status tracking</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Priority levels</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Contact association</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Agent assignment</div>
+      </div>
+      <div class="sub-h">Missing — Critical</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-red"></div>Email-to-ticket inbound parsing</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Shared inbox / omnichannel (email, chat, WhatsApp)</div>
+        <div class="feature-item"><div class="dot dot-red"></div>SLA policies with escalation rules</div>
+        <div class="feature-item"><div class="dot dot-red"></div>CSAT survey on ticket close</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Ticket routing rules (skills-based, round-robin)</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Canned responses / templates library</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Internal notes vs customer-visible replies</div>
+      </div>
+      <div class="sub-h">Missing — AI</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-yellow"></div>AI ticket classification & auto-tagging</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>AI suggested reply from knowledge base</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Sentiment analysis on incoming messages</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>AI ticket summarization for agent handoff</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Churn risk flag when enterprise customer raises ticket</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Automated FAQ deflection chatbot</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAMPAIGNS MODULE -->
+  <div class="module-block">
+    <div class="module-header" onclick="toggleModule(this)">
+      <div class="module-icon" style="background:rgba(255,107,53,0.1);">📣</div>
+      <h3>Campaigns</h3>
+      <span class="tag tag-green">Existing</span>
+      <span style="font-size:11px;color:var(--muted);margin-left:auto;">16 gaps identified</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="module-body">
+      <div class="sub-h">Current Capabilities</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-green"></div>Campaign creation with type/channel</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Contact list association</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Basic status tracking</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Campaign-to-lead attribution</div>
+      </div>
+      <div class="sub-h">Missing — Critical</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-red"></div>Drag-and-drop email builder (HTML/visual)</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Email scheduling with send-time optimization</div>
+        <div class="feature-item"><div class="dot dot-red"></div>A/B subject line testing</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Campaign automation (trigger-based drip sequences)</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Unsubscribe / bounce management (CAN-SPAM / GDPR)</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Campaign performance: opens, clicks, CTR, revenue attributed</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Multi-step sequence builder (email + task + call)</div>
+      </div>
+      <div class="sub-h">Missing — AI</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-yellow"></div>AI copywriter for subject lines and email body</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>AI audience segmentation suggestions</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Optimal send-time prediction per recipient</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Content personalization tokens with AI fallback</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPORTS MODULE -->
+  <div class="module-block">
+    <div class="module-header" onclick="toggleModule(this)">
+      <div class="module-icon" style="background:rgba(0,229,160,0.1);">📈</div>
+      <h3>Reports</h3>
+      <span class="tag tag-green">Existing</span>
+      <span style="font-size:11px;color:var(--muted);margin-left:auto;">14 gaps identified</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="module-body">
+      <div class="sub-h">Current Capabilities</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-green"></div>Pre-built report templates (deals, contacts)</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Recharts-based visualizations</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Date range filtering</div>
+        <div class="feature-item"><div class="dot dot-green"></div>Role-filtered data</div>
+      </div>
+      <div class="sub-h">Missing — Critical</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-red"></div>Custom report builder (any entity × any metric)</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Cross-module reports (leads → deals → revenue)</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Funnel / conversion reports</div>
+        <div class="feature-item"><div class="dot dot-red"></div>CSV/XLSX export</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Scheduled email delivery of reports</div>
+        <div class="feature-item"><div class="dot dot-red"></div>Leaderboard report (rep performance)</div>
+      </div>
+      <div class="sub-h">Missing — AI</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="dot dot-yellow"></div>Natural language report generation ("Show me deals lost to competitor X")</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>AI narrative summary above every report</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Anomaly detection in trends</div>
+        <div class="feature-item"><div class="dot dot-yellow"></div>Attribution modeling (first-touch, last-touch, linear)</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SECTION C: NEW MODULES -->
+<div class="section" id="new-modules">
+  <div class="section-label">Section C</div>
+  <div class="section-title">New Modules Catalogue</div>
+  <div class="section-intro">18 proposed new modules spanning from table-stakes gaps to advanced differentiators. Each entry includes why it matters, MVP scope, data model, and complexity rating.</div>
+
+  <div class="card-grid">
+
+    <div class="card">
+      <span class="card-tag">P0 · MVP</span>
+      <span class="complexity">Size: M</span>
+      <h3>📧 Email & Sequences</h3>
+      <p>Table-stakes missing feature. Every competitor has this. Direct revenue impact via automated outreach at scale.</p>
+      <ul>
+        <li>Email tracking (open/click via pixel + link wrapping)</li>
+        <li>Multi-step sequence builder (email + task + call)</li>
+        <li>Template library with variables</li>
+        <li>Unsubscribe & bounce handling</li>
+        <li>AI email draft generation</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag">P0 · MVP</span>
+      <span class="complexity">Size: S</span>
+      <h3>🤖 AI Copilot Center</h3>
+      <p>The strategic differentiation layer. A unified AI sidebar available across all modules. CoreCRM's "Breeze" equivalent.</p>
+      <ul>
+        <li>Context-aware sidebar (record-level AI)</li>
+        <li>Chat interface with CRM data grounding</li>
+        <li>Record summarization (contact, deal, ticket)</li>
+        <li>Next best action recommendations</li>
+        <li>Prompt history and feedback loop</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag">P0 · MVP</span>
+      <span class="complexity">Size: S</span>
+      <h3>📅 Meeting Scheduler</h3>
+      <p>Removes friction from the sales cycle. Reps with scheduling links close 23% more meetings (HubSpot internal data).</p>
+      <ul>
+        <li>Personal booking page with availability rules</li>
+        <li>Google Calendar / Outlook sync</li>
+        <li>Round-robin team scheduling</li>
+        <li>Automatic CRM activity log on booking</li>
+        <li>Custom confirmation emails</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag blue">P1 · Strategic</span>
+      <span class="complexity">Size: M</span>
+      <h3>💬 Live Chat & Chatbot</h3>
+      <p>Website visitor capture and 24/7 lead qualification. Creates a direct pipeline from your website to CoreCRM.</p>
+      <ul>
+        <li>Embeddable chat widget (JS snippet)</li>
+        <li>Rule-based chatbot builder</li>
+        <li>AI chatbot with FAQ knowledge base</li>
+        <li>Lead capture → auto-create contact/lead</li>
+        <li>Conversation transcript stored in CRM</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag blue">P1 · Strategic</span>
+      <span class="complexity">Size: M</span>
+      <h3>📦 Products & CPQ</h3>
+      <p>Unlocks enterprise deals. Products catalog enables line-item deals, accurate forecasting, and quote generation.</p>
+      <ul>
+        <li>Product catalog (SKU, price, tax, discount rules)</li>
+        <li>Line items on deals</li>
+        <li>Quote generation (PDF output)</li>
+        <li>Price book support (multiple tiers)</li>
+        <li>Approval workflows on large discounts</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag blue">P1 · Strategic</span>
+      <span class="complexity">Size: M</span>
+      <h3>🔮 Forecasting Lab</h3>
+      <p>Replaces Excel-based sales forecasting. Creates board-ready revenue projections. Salesforce charges $75/seat for this alone.</p>
+      <ul>
+        <li>Pipeline-weighted forecast (probability × value)</li>
+        <li>Manager override / commit model</li>
+        <li>AI-powered best-case / likely / worst-case</li>
+        <li>Historical accuracy tracking</li>
+        <li>Quota management per rep/team</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag blue">P1 · Strategic</span>
+      <span class="complexity">Size: L</span>
+      <h3>🎓 Knowledge Base</h3>
+      <p>Reduces support volume by 30-40% (Freshdesk benchmark). Powers AI ticket deflection and agent assistance.</p>
+      <ul>
+        <li>Article editor (rich text / markdown)</li>
+        <li>Categories and tagging</li>
+        <li>Customer-facing portal</li>
+        <li>Search with semantic/AI ranking</li>
+        <li>Article feedback and view analytics</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag blue">P1 · Strategic</span>
+      <span class="complexity">Size: M</span>
+      <h3>🔗 Integration Marketplace</h3>
+      <p>HubSpot's 2,000+ integrations are cited as top purchase reason. A marketplace closes the ecosystem moat gap.</p>
+      <ul>
+        <li>Native integrations: Gmail, Outlook, Slack, Zoom</li>
+        <li>Webhook configurator (outbound)</li>
+        <li>Zapier / Make connector</li>
+        <li>Native REST API with OAuth 2.0</li>
+        <li>App store UI for 1-click connect</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag orange">P2 · Growth</span>
+      <span class="complexity">Size: L</span>
+      <h3>🎯 Customer Success</h3>
+      <p>Retention is 5–25× cheaper than acquisition. CS module tracks health scores, NPS, QBRs, and expansion revenue.</p>
+      <ul>
+        <li>Customer health score engine</li>
+        <li>Success plan templates</li>
+        <li>NPS / CSAT survey engine</li>
+        <li>Renewal pipeline view</li>
+        <li>AI churn prediction with intervention prompts</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag orange">P2 · Growth</span>
+      <span class="complexity">Size: M</span>
+      <h3>💳 Subscription & Revenue</h3>
+      <p>SaaS-native billing tracking: MRR, ARR, churn rate, expansion MRR. Ties financial data to CRM records.</p>
+      <ul>
+        <li>Subscription plan tracking per account</li>
+        <li>MRR / ARR / NRR / churn dashboards</li>
+        <li>Renewal alerts and auto-tasks</li>
+        <li>Stripe/Paddle webhook integration</li>
+        <li>Expansion opportunity flagging</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag orange">P2 · Growth</span>
+      <span class="complexity">Size: M</span>
+      <h3>🚀 Onboarding Module</h3>
+      <p>New customer onboarding tracked in CRM. Reduces time-to-value and boosts 90-day retention by up to 30%.</p>
+      <ul>
+        <li>Onboarding checklist templates</li>
+        <li>Milestone tracking per account</li>
+        <li>Automated welcome sequences</li>
+        <li>Progress % visible in account view</li>
+        <li>AI risk flag if onboarding stalls</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag orange">P2 · Growth</span>
+      <span class="complexity">Size: L</span>
+      <h3>📊 RevOps Center</h3>
+      <p>Bridges sales, marketing, and CS ops. Enables cross-functional revenue intelligence for VP/C-suite users.</p>
+      <ul>
+        <li>Revenue attribution (MQL→SQL→Deal)</li>
+        <li>CAC, LTV, NRR, payback period metrics</li>
+        <li>Territory & quota management</li>
+        <li>AI revenue planning assistant</li>
+        <li>Board-ready slide generation</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag orange">P2 · Growth</span>
+      <span class="complexity">Size: M</span>
+      <h3>🤝 Partner & Channel</h3>
+      <p>Enables partner-sourced and co-sell pipeline tracking. Critical for enterprise GTM expansion.</p>
+      <ul>
+        <li>Partner portal access (limited RBAC)</li>
+        <li>Deal registration and co-sell tracking</li>
+        <li>Partner-attributed revenue reporting</li>
+        <li>MDF (market dev funds) request tracking</li>
+        <li>Partner health score</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag" style="background:var(--muted);">P3 · Future</span>
+      <span class="complexity">Size: L</span>
+      <h3>🏗️ Workflow Automation Engine</h3>
+      <p>Visual automation builder. HubSpot's Workflows and Zoho's Blueprint are the reference implementations. High lock-in value.</p>
+      <ul>
+        <li>Trigger → Condition → Action visual builder</li>
+        <li>Cross-module triggers (deal stage → create task)</li>
+        <li>Delay timers and branching logic</li>
+        <li>AI-suggested automations from usage patterns</li>
+        <li>Automation audit log</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag" style="background:var(--muted);">P3 · Future</span>
+      <span class="complexity">Size: L</span>
+      <h3>📱 Mobile App (iOS/Android)</span></h3>
+      <p>Every top CRM has a mobile app. Missing = deal-breaker for field sales teams. Critical for enterprise sales.</p>
+      <ul>
+        <li>Full contact/deal/activity access</li>
+        <li>Push notifications for tasks, mentions</li>
+        <li>Offline mode with sync</li>
+        <li>Business card scanner → contact</li>
+        <li>Voice-to-note with AI transcription</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag" style="background:var(--muted);">P3 · Future</span>
+      <span class="complexity">Size: M</span>
+      <h3>🛡️ Compliance Center</h3>
+      <p>Enterprise requirement. GDPR, CCPA, SOC2 readiness. Unlocks regulated industry verticals (finance, healthcare).</p>
+      <ul>
+        <li>Data subject request (DSR) management</li>
+        <li>Consent records and audit trail</li>
+        <li>Data retention policies with auto-delete</li>
+        <li>Field-level encryption options</li>
+        <li>SOC2 / ISO27001 audit log export</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag" style="background:var(--muted);">P3 · Future</span>
+      <span class="complexity">Size: L</span>
+      <h3>🔊 Conversation Intelligence</h3>
+      <p>Close CRM built its entire brand around this. AI-transcribed sales calls with coaching insights have 3× rep adoption vs manual CRM logging.</p>
+      <ul>
+        <li>Zoom/Meet call recording integration</li>
+        <li>AI transcription + speaker diarization</li>
+        <li>Keyword & topic extraction</li>
+        <li>Competitor mention detection</li>
+        <li>Manager coaching scorecards</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-tag" style="background:var(--muted);">P3 · Future</span>
+      <span class="complexity">Size: M</span>
+      <h3>🌐 Website Intelligence</h3>
+      <p>Pipedrive's "Web Visitors" add-on charges $41/mo per company for this. Identifies anonymous visitors and ties back to CRM contacts.</p>
+      <ul>
+        <li>Anonymous visitor identification by IP/domain</li>
+        <li>Page visit tracking per known contact</li>
+        <li>Intent scoring from web behavior</li>
+        <li>Hot visitor alerts to reps</li>
+        <li>UTM parameter → lead source mapping</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<!-- SECTION D: LLM BLUEPRINT -->
+<div class="section" id="llm">
+  <div class="section-label">Section D</div>
+  <div class="section-title">LLM Feature Blueprint</div>
+  <div class="section-intro">Detailed AI/LLM use cases for each module with prompt templates, I/O schemas, guardrails, model routing strategy, and evaluation metrics. Stack: Groq (fast, cheap) + OpenAI-compatible API (reasoning tasks).</div>
+
+  <div class="callout">
+    <div class="callout-label">Model Routing Strategy</div>
+    <strong>Tier 1 (Groq / Llama 3.1-8B-instant):</strong> Summaries, email drafts, classification, tagging. Latency &lt;200ms, cost &lt;$0.0002/call.<br>
+    <strong>Tier 2 (GPT-4o-mini / Claude Haiku):</strong> Lead scoring, deal analysis, sentiment. Latency &lt;500ms.<br>
+    <strong>Tier 3 (GPT-4o / Claude Sonnet):</strong> Complex reasoning — forecast narrative, coach feedback, compliance review. Use sparingly.
+  </div>
+
+  <div class="llm-card">
+    <h4>🎯 Lead Scoring (Predictive)</h4>
+    <p style="color:var(--muted);font-size:12px;">Module: Leads · Tier: 2 · Business Impact: +35% conversion rate (Salesforce benchmark)</p>
+    <div class="sub-h">Prompt Template</div>
+    <div class="prompt-box">SYSTEM: You are a B2B lead qualification expert. Analyze the lead data and return a JSON score.
+
+USER: Lead data:
+- Company: {{company_name}} ({{industry}}, {{employee_count}} employees)
+- Contact: {{title}} at {{company}}
+- Source: {{lead_source}}
+- Engagement: {{email_opens}} email opens, {{page_visits}} page visits
+- ICP criteria: {{icp_definition}}
+
+Return JSON: {"score": 0-100, "grade": "A/B/C/D", "reasoning": "...", "top_signals": [...], "recommended_action": "..."}</div>
+    <div class="sub-h">Input / Output Schema</div>
+    <div class="schema-box">INPUT: {lead_id, company, title, source, engagement_events[], icp_criteria{}}
+OUTPUT: {score:int, grade:str, reasoning:str, signals:str[], action:str, confidence:float}</div>
+    <div class="guardrail-list">
+      <span class="guardrail">PII masking before prompt</span>
+      <span class="guardrail">Confidence threshold &gt; 0.65</span>
+      <span class="guardrail">Human review if score 40–60</span>
+      <span class="guardrail">No demographic signals</span>
+      <span class="guardrail">Audit log every call</span>
+    </div>
+  </div>
+
+  <div class="llm-card">
+    <h4>📄 Record Summarization (Contacts, Deals, Accounts)</h4>
+    <p style="color:var(--muted);font-size:12px;">Module: All · Tier: 1 · Business Impact: Saves 5–8 min/rep/day of context-loading</p>
+    <div class="prompt-box">SYSTEM: You are a CRM assistant. Write a 3-sentence briefing for a sales rep about to engage with this record. Be direct and actionable.
+
+USER: Contact: {{name}}, {{title}} at {{company}}
+Last interaction: {{last_activity_type}} on {{last_activity_date}}
+Open deals: {{deals_count}} ({{deals_value}} total)
+Recent tickets: {{ticket_summary}}
+Notes: {{notes_excerpt}}
+
+Write the briefing:</div>
+    <div class="guardrail-list">
+      <span class="guardrail">Max 100 tokens output</span>
+      <span class="guardrail">Fallback if insufficient data</span>
+      <span class="guardrail">Never invent facts</span>
+      <span class="guardrail">Strip PII from log</span>
+    </div>
+  </div>
+
+  <div class="llm-card">
+    <h4>✉️ AI Email Composer</h4>
+    <p style="color:var(--muted);font-size:12px;">Module: Campaigns, Deals, Contacts · Tier: 1 · Business Impact: 3× outreach volume</p>
+    <div class="prompt-box">SYSTEM: You are an expert B2B sales email writer. Write emails that are concise, personalized, and have a clear CTA. Never write more than 150 words.
+
+USER: Write a {{email_type}} email for:
+- Recipient: {{first_name}}, {{title}} at {{company}}
+- Context: {{deal_stage}} / {{last_interaction}}
+- Goal: {{email_goal}}
+- Tone: {{tone_setting}}
+- CTA: {{desired_cta}}</div>
+    <div class="guardrail-list">
+      <span class="guardrail">Spam word filter post-gen</span>
+      <span class="guardrail">Human edit before send</span>
+      <span class="guardrail">No false claims check</span>
+      <span class="guardrail">Unsubscribe footer enforced</span>
+    </div>
+  </div>
+
+  <div class="llm-card">
+    <h4>🎫 Ticket Classification & Auto-Routing</h4>
+    <p style="color:var(--muted);font-size:12px;">Module: Tickets · Tier: 1 · Business Impact: 40% reduction in manual triage time</p>
+    <div class="prompt-box">SYSTEM: You are a customer support classifier. Analyze the ticket and return routing metadata as JSON.
+
+USER: Subject: {{ticket_subject}}
+Body: {{ticket_body_first_300_chars}}
+
+Return: {"category": "billing|technical|feature_request|general", "priority": "low|medium|high|critical", "sentiment": "positive|neutral|negative|angry", "suggested_team": "...", "requires_human": true/false, "confidence": 0.0-1.0}</div>
+    <div class="guardrail-list">
+      <span class="guardrail">Fallback to manual if confidence &lt;0.7</span>
+      <span class="guardrail">PII redaction in logs</span>
+      <span class="guardrail">Audit trail per classification</span>
+    </div>
+  </div>
+
+  <div class="llm-card">
+    <h4>🔮 Deal Risk Intelligence</h4>
+    <p style="color:var(--muted);font-size:12px;">Module: Deals · Tier: 2 · Business Impact: +15% win rate via early intervention</p>
+    <div class="prompt-box">SYSTEM: You are an expert sales deal analyst. Identify risk factors and recommended interventions.
+
+USER: Deal: {{deal_name}}, Value: {{value}}, Stage: {{stage}}, Days in stage: {{days_in_stage}}
+Activity: {{last_activity_days}} days since last activity
+Emails: {{email_threads_count}}, Meetings: {{meetings_count}}
+Win probability (rule-based): {{base_probability}}%
+Similar won deals: {{similar_won_avg_days}} avg days to close
+
+Provide: {"risk_level": "low|medium|high|critical", "risk_factors": [], "recommended_actions": [], "adjusted_probability": int, "close_date_prediction": "YYYY-MM-DD"}</div>
+    <div class="guardrail-list">
+      <span class="guardrail">Flag outlier predictions for review</span>
+      <span class="guardrail">Show reasoning to user</span>
+      <span class="guardrail">Weekly model accuracy eval</span>
+    </div>
+  </div>
+
+  <div class="llm-card">
+    <h4>📊 Natural Language Report Generation</h4>
+    <p style="color:var(--muted);font-size:12px;">Module: Reports · Tier: 3 · Business Impact: Democratizes analytics for non-technical users</p>
+    <div class="prompt-box">SYSTEM: You are a CRM data analyst. Translate natural language queries into filter/aggregation specifications.
+
+USER: User query: "{{user_query}}"
+Available entities: contacts, leads, deals, tickets, campaigns, activities
+Available fields: {{field_registry_json}}
+
+Return: {"entity": "...", "filters": [{"field":"...", "op":"...", "value":"..."}], "group_by": "...", "aggregate": "count|sum|avg", "sort": "...", "chart_type": "bar|line|pie|table", "nl_explanation": "..."}</div>
+    <div class="guardrail-list">
+      <span class="guardrail">SQL injection prevention</span>
+      <span class="guardrail">Permission check before query exec</span>
+      <span class="guardrail">Show generated query to user</span>
+      <span class="guardrail">Hallucination: validate field names</span>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-label">LLM Evaluation Metrics</div>
+    Lead scoring: Precision@A-grade &gt;80%, Recall@converting leads &gt;75% | Email drafts: edit-distance ratio &lt;0.3 (users rarely change much) | Ticket classification: Accuracy &gt;90%, F1 &gt;0.85 | Record summaries: User feedback thumbs-up &gt;80% | NL Reports: Query execution success rate &gt;85%
+  </div>
+</div>
+
+<!-- SECTION E: TECHNICAL EXPANSION -->
+<div class="section" id="technical">
+  <div class="section-label">Section E</div>
+  <div class="section-title">Technical Expansion Plan</div>
+
+  <div class="two-col" style="margin-bottom:32px;">
+    <div>
+      <div class="sub-h" style="margin-top:0;">New Data Entities (Priority)</div>
+
+      <div class="entity-card">
+        <div class="entity-name">email_sequence</div>
+        <div class="entity-fields">
+          <span class="field key">id (UUID)</span>
+          <span class="field">name</span>
+          <span class="field">steps: JSON[]</span>
+          <span class="field">status</span>
+          <span class="field">enrolled_count</span>
+          <span class="field">owner_id</span>
+          <span class="field">created_at</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <div class="entity-name">email_tracking_event</div>
+        <div class="entity-fields">
+          <span class="field key">id</span>
+          <span class="field">contact_id</span>
+          <span class="field">email_id</span>
+          <span class="field">event_type (open/click/bounce/unsubscribe)</span>
+          <span class="field">ip_hash</span>
+          <span class="field">user_agent</span>
+          <span class="field">timestamp</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <div class="entity-name">ai_inference_log</div>
+        <div class="entity-fields">
+          <span class="field key">id</span>
+          <span class="field">module</span>
+          <span class="field">use_case</span>
+          <span class="field">model_used</span>
+          <span class="field">input_hash (PII-safe)</span>
+          <span class="field">output_json</span>
+          <span class="field">latency_ms</span>
+          <span class="field">cost_usd</span>
+          <span class="field">user_feedback</span>
+          <span class="field">tenant_id</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <div class="entity-name">product</div>
+        <div class="entity-fields">
+          <span class="field key">id</span>
+          <span class="field">name</span>
+          <span class="field">sku</span>
+          <span class="field">unit_price</span>
+          <span class="field">currency</span>
+          <span class="field">tax_rate</span>
+          <span class="field">price_book_id</span>
+          <span class="field">active</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <div class="entity-name">deal_line_item</div>
+        <div class="entity-fields">
+          <span class="field key">id</span>
+          <span class="field">deal_id</span>
+          <span class="field">product_id</span>
+          <span class="field">quantity</span>
+          <span class="field">unit_price</span>
+          <span class="field">discount_pct</span>
+          <span class="field">total</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <div class="entity-name">lead_score</div>
+        <div class="entity-fields">
+          <span class="field key">id</span>
+          <span class="field">lead_id</span>
+          <span class="field">score (0-100)</span>
+          <span class="field">grade (A-D)</span>
+          <span class="field">model_version</span>
+          <span class="field">signals: JSON</span>
+          <span class="field">scored_at</span>
+        </div>
+      </div>
+
+    </div>
+    <div>
+      <div class="sub-h" style="margin-top:0;">New REST API Endpoints (Priority)</div>
+
+      <div class="endpoint"><span class="method post">POST</span><div><div class="ep-path">/api/v1/sequences</div><div class="ep-desc">Create email sequence</div></div></div>
+      <div class="endpoint"><span class="method post">POST</span><div><div class="ep-path">/api/v1/sequences/{id}/enroll</div><div class="ep-desc">Enroll contacts in sequence</div></div></div>
+      <div class="endpoint"><span class="method get">GET</span><div><div class="ep-path">/api/v1/tracking/pixel/{email_id}</div><div class="ep-desc">Email open tracking pixel</div></div></div>
+      <div class="endpoint"><span class="method post">POST</span><div><div class="ep-path">/api/v1/ai/score/lead</div><div class="ep-desc">Trigger AI lead scoring</div></div></div>
+      <div class="endpoint"><span class="method post">POST</span><div><div class="ep-path">/api/v1/ai/summarize</div><div class="ep-desc">Summarize any CRM record</div></div></div>
+      <div class="endpoint"><span class="method post">POST</span><div><div class="ep-path">/api/v1/ai/email/draft</div><div class="ep-desc">Generate email draft</div></div></div>
+      <div class="endpoint"><span class="method post">POST</span><div><div class="ep-path">/api/v1/ai/reports/query</div><div class="ep-desc">NL → report spec</div></div></div>
+      <div class="endpoint"><span class="method get">GET</span><div><div class="ep-path">/api/v1/deals/{id}/ai-health</div><div class="ep-desc">Deal risk & win probability</div></div></div>
+      <div class="endpoint"><span class="method get">GET</span><div><div class="ep-path">/api/v1/forecasting/pipeline</div><div class="ep-desc">Revenue forecast by period</div></div></div>
+      <div class="endpoint"><span class="method post">POST</span><div><div class="ep-path">/api/v1/tickets/classify</div><div class="ep-desc">AI ticket classification</div></div></div>
+      <div class="endpoint"><span class="method get">GET</span><div><div class="ep-path">/api/v1/contacts/{id}/enrichment</div><div class="ep-desc">AI enrichment status & data</div></div></div>
+      <div class="endpoint"><span class="method post">POST</span><div><div class="ep-path">/api/v1/webhooks</div><div class="ep-desc">Register outbound webhook</div></div></div>
+      <div class="endpoint"><span class="method post">POST</span><div><div class="ep-path">/api/v1/oauth/token</div><div class="ep-desc">OAuth 2.0 for integrations</div></div></div>
+      <div class="endpoint"><span class="method get">GET</span><div><div class="ep-path">/api/v1/audit-log</div><div class="ep-desc">Compliance audit trail</div></div></div>
+      <div class="endpoint"><span class="method post">POST</span><div><div class="ep-path">/api/v1/scheduler/availability</div><div class="ep-desc">Check meeting availability</div></div></div>
+
+      <div class="sub-h">Multi-Tenant & RBAC Notes</div>
+      <p style="font-size:12px;color:var(--muted);">
+        Every table must include <code style="color:var(--accent);">tenant_id</code> FK with Row-Level Security (RLS) in PostgreSQL. RBAC expansion: add <strong>custom roles</strong> beyond admin/manager/rep. Permissions matrix: per-module + per-action (create/read/update/delete/export). Audit log: every write operation should append to <code style="color:var(--accent);">audit_events</code> with actor, action, entity_type, entity_id, before/after snapshot, IP, timestamp.
+      </p>
+      <div class="sub-h">SQLite → PostgreSQL Migration Path</div>
+      <p style="font-size:12px;color:var(--muted);">
+        Use Alembic for migrations from day 1. Avoid SQLite-only features (JSON functions differ). Add <code style="color:var(--accent);">pgvector</code> extension for semantic search (AI embeddings). Connection pooling via PgBouncer. Read replicas for reporting queries. Target: &lt;100ms p95 on reads with proper indexing on tenant_id + entity FKs.
+      </p>
+    </div>
+  </div>
+
+  <div class="sub-h">Event Tracking Model</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Event</th><th>Trigger</th><th>Payload</th><th>Consumers</th></tr></thead>
+      <tbody>
+        <tr><td>lead.created</td><td>New lead form / API</td><td>{lead_id, source, owner_id, tenant_id}</td><td>AI scorer, routing engine, notification</td></tr>
+        <tr><td>deal.stage_changed</td><td>Kanban drag or API</td><td>{deal_id, from_stage, to_stage, value}</td><td>Automation engine, forecast update, alert</td></tr>
+        <tr><td>email.opened</td><td>Tracking pixel hit</td><td>{email_id, contact_id, timestamp, ua_hash}</td><td>Contact score update, sequence trigger</td></tr>
+        <tr><td>ticket.created</td><td>Inbound email / form / chat</td><td>{ticket_id, contact_id, subject, channel}</td><td>AI classifier, SLA timer, routing</td></tr>
+        <tr><td>ai.inference_complete</td><td>AI API response</td><td>{use_case, model, latency, cost, entity_id}</td><td>Cost tracker, eval pipeline</td></tr>
+        <tr><td>contact.enriched</td><td>Enrichment job complete</td><td>{contact_id, fields_added[], source}</td><td>Score recalc, notification</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SECTION F: WORKFLOW AUTOMATIONS -->
+<div class="section" id="workflow">
+  <div class="section-label">Section F</div>
+  <div class="section-title">Workflow Automation Ideas</div>
+  <div class="section-intro">50+ automation rules across the platform. Implemented via a rules engine: Trigger → Filter → Action(s). Store in <code style="color:var(--accent)">automation_rules</code> table as JSON DAG.</div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Trigger</th><th>Filter / Condition</th><th>Action</th><th>Impact</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Lead created</td><td>Score ≥ 80</td><td>Assign to top rep + send Slack alert</td><td>Speed-to-lead</td></tr>
+        <tr><td>2</td><td>Lead created</td><td>Source = "Website"</td><td>Enroll in "Website Leads" email sequence</td><td>Nurture conversion</td></tr>
+        <tr><td>3</td><td>Deal stage → "Proposal Sent"</td><td>Value ≥ $10k</td><td>Create task: "Follow up in 2 days" + notify manager</td><td>Pipeline velocity</td></tr>
+        <tr><td>4</td><td>Deal inactive 7 days</td><td>Stage ≠ Won/Lost</td><td>Send "deal rotting" alert to owner + create follow-up task</td><td>Win rate</td></tr>
+        <tr><td>5</td><td>Ticket created</td><td>Priority = Critical</td><td>Assign to senior agent + page manager via email</td><td>SLA compliance</td></tr>
+        <tr><td>6</td><td>Ticket closed</td><td>Any</td><td>Send CSAT survey 1hr after close</td><td>Customer retention</td></tr>
+        <tr><td>7</td><td>Contact email bounced</td><td>Any</td><td>Tag contact "Invalid Email" + remove from sequences</td><td>Deliverability</td></tr>
+        <tr><td>8</td><td>Deal Won</td><td>Any</td><td>Create "Onboarding" task checklist + assign CS rep</td><td>Retention / expansion</td></tr>
+        <tr><td>9</td><td>Campaign email opened ≥ 3x</td><td>Contact not in any deal</td><td>Create lead + notify SDR</td><td>Pipeline creation</td></tr>
+        <tr><td>10</td><td>Contact health score drops &gt;20pts</td><td>Account tier = Enterprise</td><td>Create urgent ticket + alert CSM</td><td>Churn prevention</td></tr>
+        <tr><td>11</td><td>Meeting booked</td><td>Any lead</td><td>Send calendar invite + meeting prep brief via AI</td><td>Meeting conversion</td></tr>
+        <tr><td>12</td><td>Deal stage → Closed Lost</td><td>Any</td><td>Require win/loss reason → trigger competitor analysis</td><td>Win rate improvement</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SECTION G: ANALYTICS & KPIs -->
+<div class="section" id="analytics">
+  <div class="section-label">Section G</div>
+  <div class="section-title">Analytics & KPI Recommendations</div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kn">MQL→SQL %</div><div class="kt">Lead Conversion</div><div class="kd">Marketing lead to qualified sales lead. Target: &gt;20% for inbound, &gt;8% outbound.</div></div>
+    <div class="kpi-card"><div class="kn">Deal Velocity</div><div class="kt">Sales Speed</div><div class="kd">Avg days from lead creation to closed-won. AI-flagged if &gt;120% of historical avg.</div></div>
+    <div class="kpi-card"><div class="kn">Win Rate %</div><div class="kt">Sales Performance</div><div class="kd">Won / (Won + Lost). Segment by rep, product, industry, deal size, lead source.</div></div>
+    <div class="kpi-card"><div class="kn">Pipeline Coverage</div><div class="kt">Revenue Forecast</div><div class="kd">Total pipeline value / quota. Healthy = 3–4×. AI alert if &lt;2.5×.</div></div>
+    <div class="kpi-card"><div class="kn">CSAT Score</div><div class="kt">Support Quality</div><div class="kd">Post-ticket survey. Target &gt;4.2/5. AI root-cause analysis if trending down.</div></div>
+    <div class="kpi-card"><div class="kn">Ticket FRT</div><div class="kt">First Response Time</div><div class="kd">Time from ticket creation to first agent reply. Target &lt;2hr (business hours).</div></div>
+    <div class="kpi-card"><div class="kn">Email CTR</div><div class="kt">Campaign Performance</div><div class="kd">Click / Delivered. Benchmark: 2–5% for B2B cold email, 10–20% for nurture.</div></div>
+    <div class="kpi-card"><div class="kn">NRR %</div><div class="kt">Revenue Retention</div><div class="kd">Net Revenue Retention. World-class SaaS = &gt;120%. Tracks expansion vs churn.</div></div>
+    <div class="kpi-card"><div class="kn">AI Adoption</div><div class="kt">Platform Engagement</div><div class="kd">% of users using AI features weekly. Target: &gt;60% within 90 days of launch.</div></div>
+    <div class="kpi-card"><div class="kn">Data Quality %</div><div class="kt">CRM Health</div><div class="kd">Contacts with email + phone + company filled. Target &gt;85%. 30% of CRM data decays annually.</div></div>
+  </div>
+</div>
+
+<!-- SECTION H: SECURITY & COMPLIANCE -->
+<div class="section" id="security">
+  <div class="section-label">Section H</div>
+  <div class="section-title">Security & Compliance Considerations</div>
+
+  <div class="card-grid" style="margin-top:0;">
+    <div class="card">
+      <span class="card-tag">Critical</span>
+      <h3>🔐 Auth & Access</h3>
+      <ul>
+        <li>Upgrade JWT to short-lived access tokens (15min) + refresh tokens (30 days)</li>
+        <li>MFA enforcement for admin/manager roles</li>
+        <li>SSO/SAML support (enterprise requirement)</li>
+        <li>IP allowlist per tenant</li>
+        <li>Session management (concurrent login limits)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="card-tag orange">GDPR/CCPA</span>
+      <h3>🌍 Privacy Compliance</h3>
+      <ul>
+        <li>Consent management per contact (opt-in/out records)</li>
+        <li>Right to erasure (cascade delete across tables)</li>
+        <li>Data export (DSAR) within 30 days</li>
+        <li>Cookie consent banner for chat widget</li>
+        <li>Data processing agreement (DPA) template</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="card-tag blue">AI Safety</span>
+      <h3>🤖 LLM Guardrails</h3>
+      <ul>
+        <li>PII masking before every prompt (name, email, phone → tokens)</li>
+        <li>Zero-retention policy with AI providers</li>
+        <li>Output confidence scoring — reject &lt;0.65</li>
+        <li>Human approval gate for high-stakes actions</li>
+        <li>Model output audit log (30-day retention)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="card-tag yellow">Audit</span>
+      <h3>📋 Audit & Compliance</h3>
+      <ul>
+        <li>Immutable audit log: every create/update/delete</li>
+        <li>WHO + WHAT + WHEN + IP on every event</li>
+        <li>Admin-accessible log viewer with search/export</li>
+        <li>Retention policy (7 years for enterprise)</li>
+        <li>SOC2 Type II readiness checklist</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="card-tag">Infra</span>
+      <h3>🛡️ Infrastructure</h3>
+      <ul>
+        <li>Encrypt all data at rest (AES-256)</li>
+        <li>TLS 1.3 in transit, HSTS enforced</li>
+        <li>Daily automated backups with point-in-time recovery</li>
+        <li>Rate limiting: 1000 req/min per tenant, 100 req/min per user</li>
+        <li>Secrets management (HashiCorp Vault or AWS Secrets Manager)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="card-tag blue">Enterprise</span>
+      <h3>🏢 Enterprise Requirements</h3>
+      <ul>
+        <li>Custom data residency (EU/US/APAC regions)</li>
+        <li>Field-level encryption for sensitive fields</li>
+        <li>IP whitelisting + VPN tunnel support</li>
+        <li>Dedicated instance option (single-tenant deployment)</li>
+        <li>Custom DPA and BAA for HIPAA-adjacent use cases</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION I: ROADMAP -->
+<div class="section" id="roadmap">
+  <div class="section-label">Section I</div>
+  <div class="section-title">Phased Roadmap — P0 to P3</div>
+  <div class="section-intro">4-phase execution plan mapped to 30/60/90 days and 6–12 month horizons. Prioritized by: business impact × implementation effort × strategic positioning.</div>
+
+  <div class="roadmap-grid">
+    <div class="phase-col">
+      <div class="phase-header">
+        <div class="phase-dot" style="background:var(--accent);"></div>
+        <div><span>P0 — Foundation</span><br><small>0–60 Days</small></div>
+      </div>
+      <div class="phase-items">
+        <div class="phase-item">AI Copilot sidebar (record summary + NL query)</div>
+        <div class="phase-item">Email tracking (open/click pixel)</div>
+        <div class="phase-item">AI lead scoring (rules + LLM hybrid)</div>
+        <div class="phase-item">Meeting scheduler (cal sync)</div>
+        <div class="phase-item">Dashboard — drag & drop widgets</div>
+        <div class="phase-item">AI email draft generator</div>
+        <div class="phase-item">Contacts — duplicate detection & merge</div>
+        <div class="phase-item">Contacts — custom fields</div>
+        <div class="phase-item">Deals — multiple pipelines</div>
+        <div class="phase-item">Deals — deal rotting alerts</div>
+        <div class="phase-item">Reports — CSV export</div>
+        <div class="phase-item">Tickets — email-to-ticket inbound</div>
+        <div class="phase-item">JWT refresh token upgrade</div>
+        <div class="phase-item">PostgreSQL migration (prod)</div>
+      </div>
+    </div>
+    <div class="phase-col">
+      <div class="phase-header">
+        <div class="phase-dot" style="background:var(--accent2);"></div>
+        <div><span>P1 — Differentiation</span><br><small>60–120 Days</small></div>
+      </div>
+      <div class="phase-items">
+        <div class="phase-item">Email sequence builder (multi-step)</div>
+        <div class="phase-item">AI deal health + win probability</div>
+        <div class="phase-item">Forecasting Lab (pipeline-weighted)</div>
+        <div class="phase-item">Products catalog + line items on deals</div>
+        <div class="phase-item">Quote / CPQ generator (PDF)</div>
+        <div class="phase-item">Live chat widget + chatbot builder</div>
+        <div class="phase-item">Tickets — AI classification & routing</div>
+        <div class="phase-item">Tickets — SLA policies</div>
+        <div class="phase-item">Knowledge Base v1</div>
+        <div class="phase-item">Campaign drag-and-drop email builder</div>
+        <div class="phase-item">Campaign A/B testing</div>
+        <div class="phase-item">Integration Marketplace v1 (Gmail, Slack, Zapier)</div>
+        <div class="phase-item">NL report generation</div>
+        <div class="phase-item">RBAC custom roles + field permissions</div>
+      </div>
+    </div>
+    <div class="phase-col">
+      <div class="phase-header">
+        <div class="phase-dot" style="background:var(--accent3);"></div>
+        <div><span>P2 — Expansion</span><br><small>120–240 Days</small></div>
+      </div>
+      <div class="phase-items">
+        <div class="phase-item">Customer Success module</div>
+        <div class="phase-item">Subscription / MRR tracking</div>
+        <div class="phase-item">RevOps Center (CAC, LTV, NRR)</div>
+        <div class="phase-item">AI contact enrichment</div>
+        <div class="phase-item">AI churn prediction</div>
+        <div class="phase-item">Onboarding module</div>
+        <div class="phase-item">Workflow automation visual builder</div>
+        <div class="phase-item">Partner & Channel module</div>
+        <div class="phase-item">Website intelligence tracking</div>
+        <div class="phase-item">Omnichannel inbox (email + chat + WhatsApp)</div>
+        <div class="phase-item">Advanced analytics (attribution, cohort)</div>
+        <div class="phase-item">Mobile app (React Native)</div>
+        <div class="phase-item">SSO/SAML integration</div>
+        <div class="phase-item">GDPR Consent Management Center</div>
+      </div>
+    </div>
+    <div class="phase-col">
+      <div class="phase-header">
+        <div class="phase-dot" style="background:var(--muted);"></div>
+        <div><span>P3 — Enterprise</span><br><small>6–12 Months</small></div>
+      </div>
+      <div class="phase-items">
+        <div class="phase-item">Conversation intelligence (Zoom/Meet AI)</div>
+        <div class="phase-item">Compliance Center (SOC2, GDPR, HIPAA)</div>
+        <div class="phase-item">Custom objects (Salesforce-style extensibility)</div>
+        <div class="phase-item">Territory & quota management</div>
+        <div class="phase-item">Advanced CPQ (approval workflows, bundles)</div>
+        <div class="phase-item">AI agentic workflows (autonomous task completion)</div>
+        <div class="phase-item">White-label / multi-brand support</div>
+        <div class="phase-item">Embedded BI / Looker-style reporting</div>
+        <div class="phase-item">Public developer API + marketplace</div>
+        <div class="phase-item">Enterprise data residency options</div>
+        <div class="phase-item">Dedicated instance deployment</div>
+        <div class="phase-item">Revenue Intelligence (Gong/Clari-style)</div>
+        <div class="phase-item">AI-powered competitive battlecards</div>
+        <div class="phase-item">Customer community portal</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:32px;">
+    <div class="callout-label">Quick Wins (Low Effort, High Impact)</div>
+    <strong>Build these first, in this order:</strong> AI Record Summaries (1 week, wow factor, immediate adoption) → Email open tracking (1 week, direct sales impact) → Deal rotting alerts (3 days, pipeline hygiene) → Duplicate contact detection (3 days, data quality) → CSV export from reports (2 days, critical missing feature) → AI email draft button on outreach (1 week, usage driver).
+  </div>
+</div>
+
+<!-- SECTION J: TOP 25 -->
+<div class="section" id="top25">
+  <div class="section-label">Section J</div>
+  <div class="section-title">Top 25 Must-Build Features Shortlist</div>
+  <div class="section-intro">The definitive priority list. P0 items (green border) must ship before any other investment. Sequence matters.</div>
+
+  <div class="top25-grid">
+    <div class="top25-item p0"><div class="top25-num">01</div><div class="top25-content"><h4>AI Record Summarizer</h4><p>1-click AI brief for any contact/deal/ticket. Immediate wow. P0 quick win.</p></div></div>
+    <div class="top25-item p0"><div class="top25-num">02</div><div class="top25-content"><h4>Email Open & Click Tracking</h4><p>Core sales intelligence. Every competitor has it. Direct pipeline impact.</p></div></div>
+    <div class="top25-item p0"><div class="top25-num">03</div><div class="top25-content"><h4>AI Lead Scoring</h4><p>Prioritize reps' time. LLM hybrid model, 0-100 score + grade + reasoning.</p></div></div>
+    <div class="top25-item p0"><div class="top25-num">04</div><div class="top25-content"><h4>Meeting Scheduler</h4><p>Eliminates "when are you free?" back-and-forth. 1-click calendar sync.</p></div></div>
+    <div class="top25-item p0"><div class="top25-num">05</div><div class="top25-content"><h4>Deal Rotting Alerts</h4><p>Automated nudge when deal goes N days without activity. Zero-friction pipeline hygiene.</p></div></div>
+    <div class="top25-item"><div class="top25-num">06</div><div class="top25-content"><h4>Email Sequence Builder</h4><p>Multi-step drip + task + call sequences. Key for SDR/outbound teams.</p></div></div>
+    <div class="top25-item"><div class="top25-num">07</div><div class="top25-content"><h4>AI Email Composer</h4><p>Generate personalized outreach in 1 click. Dramatically increases rep output.</p></div></div>
+    <div class="top25-item"><div class="top25-num">08</div><div class="top25-content"><h4>Forecasting Lab</h4><p>Weighted pipeline + AI confidence + manager commit view. Essential for VP Sales.</p></div></div>
+    <div class="top25-item"><div class="top25-num">09</div><div class="top25-content"><h4>Products Catalog + Line Items</h4><p>Enables accurate deal values, quotes, and revenue reporting.</p></div></div>
+    <div class="top25-item"><div class="top25-num">10</div><div class="top25-content"><h4>AI Ticket Classification</h4><p>Auto-categorize, prioritize, and route incoming support tickets.</p></div></div>
+    <div class="top25-item"><div class="top25-num">11</div><div class="top25-content"><h4>Live Chat Widget</h4><p>Website → CRM lead capture. Real-time visitor engagement.</p></div></div>
+    <div class="top25-item"><div class="top25-num">12</div><div class="top25-content"><h4>AI Deal Health Score</h4><p>Win probability + risk flags + recommended actions per deal.</p></div></div>
+    <div class="top25-item"><div class="top25-num">13</div><div class="top25-content"><h4>Custom Report Builder</h4><p>Any entity × any metric × any grouping. Competitive table-stakes.</p></div></div>
+    <div class="top25-item"><div class="top25-num">14</div><div class="top25-content"><h4>Knowledge Base</h4><p>Reduces support volume 30–40%. Powers AI ticket deflection.</p></div></div>
+    <div class="top25-item"><div class="top25-num">15</div><div class="top25-content"><h4>Integration Marketplace</h4><p>Gmail, Slack, Zoom, Zapier at minimum. Ecosystem moat builder.</p></div></div>
+    <div class="top25-item"><div class="top25-num">16</div><div class="top25-content"><h4>NL Query Reports</h4><p>"Show me deals closed last quarter by rep" → instant report. High adoption driver.</p></div></div>
+    <div class="top25-item"><div class="top25-num">17</div><div class="top25-content"><h4>Drag-and-Drop Dashboard</h4><p>Personalized dashboards per user role. Daily driver of platform stickiness.</p></div></div>
+    <div class="top25-item"><div class="top25-num">18</div><div class="top25-content"><h4>Campaign A/B Testing</h4><p>Subject line + send-time testing. Directly improves email ROI.</p></div></div>
+    <div class="top25-item"><div class="top25-num">19</div><div class="top25-content"><h4>SLA Policies on Tickets</h4><p>Time-based escalation rules. Critical for customer success teams.</p></div></div>
+    <div class="top25-item"><div class="top25-num">20</div><div class="top25-content"><h4>Multiple Deal Pipelines</h4><p>Sales + partnership + renewal pipelines. Each with own stages & probabilities.</p></div></div>
+    <div class="top25-item"><div class="top25-num">21</div><div class="top25-content"><h4>AI Contact Enrichment</h4><p>Job title, LinkedIn, company size from email domain. Data quality multiplier.</p></div></div>
+    <div class="top25-item"><div class="top25-num">22</div><div class="top25-content"><h4>Customer Success Module</h4><p>Health scores, NPS, QBRs, renewal pipeline. Retention = revenue.</p></div></div>
+    <div class="top25-item"><div class="top25-num">23</div><div class="top25-content"><h4>Workflow Automation Engine</h4><p>Visual trigger→condition→action builder. High lock-in value.</p></div></div>
+    <div class="top25-item"><div class="top25-num">24</div><div class="top25-content"><h4>Mobile App (React Native)</h4><p>Enterprise gate. Field sales teams won't adopt a desktop-only CRM.</p></div></div>
+    <div class="top25-item"><div class="top25-num">25</div><div class="top25-content"><h4>Compliance Center</h4><p>GDPR/CCPA + audit log + data retention. Unlocks regulated industries.</p></div></div>
+  </div>
+
+  <div class="callout" style="margin-top:40px;">
+    <div class="callout-label">Additional 50+ Net-New Feature Ideas (Rapid List)</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+      <span class="tag tag-green">Voice-to-note on mobile</span>
+      <span class="tag tag-green">Business card scanner</span>
+      <span class="tag tag-blue">LinkedIn Chrome extension</span>
+      <span class="tag tag-blue">AI battlecard generator</span>
+      <span class="tag tag-green">Smart contact merge suggestions</span>
+      <span class="tag tag-orange">Commission calculator</span>
+      <span class="tag tag-yellow">Win/loss analysis AI report</span>
+      <span class="tag tag-blue">Custom object builder</span>
+      <span class="tag tag-green">Zapier native app</span>
+      <span class="tag tag-orange">Subscription upgrade alerts</span>
+      <span class="tag tag-green">Dark mode</span>
+      <span class="tag tag-blue">Two-way SMS campaigns</span>
+      <span class="tag tag-yellow">WhatsApp Business API</span>
+      <span class="tag tag-green">Competitor mention tracker</span>
+      <span class="tag tag-orange">Deal loss pattern analysis</span>
+      <span class="tag tag-blue">Cohort retention analysis</span>
+      <span class="tag tag-green">Contact relationship map (org chart)</span>
+      <span class="tag tag-yellow">AI coaching feedback on call transcripts</span>
+      <span class="tag tag-blue">Pipeline stage entry criteria enforcement</span>
+      <span class="tag tag-orange">Multi-currency with live FX rates</span>
+      <span class="tag tag-green">Email template A/B performance stats</span>
+      <span class="tag tag-blue">Webhook event log viewer</span>
+      <span class="tag tag-yellow">Public roadmap via CRM ideas portal</span>
+      <span class="tag tag-green">Territory-based lead assignment</span>
+      <span class="tag tag-orange">Annual contract value (ACV) tracking</span>
+      <span class="tag tag-blue">Custom activity types (demo, POC, contract)</span>
+      <span class="tag tag-green">Deal room (shared doc space with prospect)</span>
+      <span class="tag tag-yellow">AI daily briefing email to each rep</span>
+      <span class="tag tag-blue">Intent data integration (Bombora, G2)</span>
+      <span class="tag tag-orange">Customer health alert Slack bot</span>
+      <span class="tag tag-green">Inline CSV paste to create contacts</span>
+      <span class="tag tag-blue">Sandbox / staging environment per tenant</span>
+      <span class="tag tag-yellow">AI-powered "similar companies" discovery</span>
+      <span class="tag tag-orange">Payment link generation on quotes</span>
+      <span class="tag tag-green">Referral program tracking module</span>
+      <span class="tag tag-blue">Custom email sending domain (SPF/DKIM)</span>
+      <span class="tag tag-yellow">Deal expiry date with auto-close</span>
+      <span class="tag tag-orange">AI "explain this metric" on any dashboard card</span>
+      <span class="tag tag-green">Rep leaderboard widget</span>
+      <span class="tag tag-blue">Goal tracking (quarterly, monthly per rep)</span>
+      <span class="tag tag-yellow">Account news feed (company news via API)</span>
+      <span class="tag tag-orange">AI-generated QBR slide deck from account data</span>
+      <span class="tag tag-blue">Contact birthday / renewal date reminders</span>
+      <span class="tag tag-green">Keyboard shortcut overlay (⌘K command palette)</span>
+      <span class="tag tag-yellow">Two-factor auth (TOTP) for all users</span>
+      <span class="tag tag-blue">Data import from HubSpot / Salesforce</span>
+      <span class="tag tag-orange">Revenue forecast vs actuals chart</span>
+      <span class="tag tag-green">Bulk action menu (assign, tag, sequence-enroll)</span>
+      <span class="tag tag-blue">API usage dashboard per tenant (for marketplace apps)</span>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p style="margin-bottom:8px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text);">CoreCRM AI-Native Strategy Report</p>
+  <p>Research synthesized from: <a href="https://www.hubspot.com/products/crm" class="source-link">HubSpot</a> <a href="https://www.salesforce.com/artificial-intelligence/" class="source-link">Salesforce</a> <a href="https://prospeo.io/s/pipedrive-vs-zoho-crm" class="source-link">Pipedrive/Zoho Analysis</a> <a href="https://www.capterra.com/resources/crm-and-ai-user-guide/" class="source-link">Capterra CRM+AI Guide (Apr 2026)</a></p>
+  <p style="margin-top:8px;color:var(--muted);">Produced April 2026 · CoreCRM Product Strategy · All competitive data sourced via Apify web intelligence</p>
+</footer>
+
+<script>
+function toggleModule(header) {
+  header.classList.toggle('open');
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+// Auto-open first module
+document.querySelectorAll('.module-header')[0]?.click();
+</script>
+</body>
+</html>
