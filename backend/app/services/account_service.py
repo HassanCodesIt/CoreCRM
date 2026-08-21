@@ -10,14 +10,15 @@ class AccountService:
     @staticmethod
     async def get_accounts(
         db: AsyncSession, 
+        tenant_id: str,
         page: int = 1, 
         limit: int = 20,
         search: Optional[str] = None,
         industry: Optional[str] = None,
         account_type: Optional[str] = None
     ) -> Tuple[List[Account], int]:
-        offset = (page - 1) * limit
-        query = select(Account).where(Account.is_deleted == False)
+        offset = (page -1) * limit
+        query = select(Account).where(Account.is_deleted == False, Account.tenant_id == tenant_id)
         
         if search:
             query = query.where(or_(
@@ -38,15 +39,19 @@ class AccountService:
         return result.scalars().all(), total
 
     @staticmethod
-    async def get_account_by_id(db: AsyncSession, account_id: str) -> Optional[Account]:
-        result = await db.execute(select(Account).where(Account.id == account_id, Account.is_deleted == False))
+    async def get_account_by_id(db: AsyncSession, account_id: str, tenant_id: str = None) -> Optional[Account]:
+        query = select(Account).where(Account.id == account_id, Account.is_deleted == False)
+        if tenant_id:
+            query = query.where(Account.tenant_id == tenant_id)
+        result = await db.execute(query)
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def create_account(db: AsyncSession, data: AccountCreate, owner_id: str) -> Account:
+    async def create_account(db: AsyncSession, data: AccountCreate, owner_id: str, tenant_id: str) -> Account:
         account = Account(
             id=str(uuid.uuid4()),
             owner_id=owner_id,
+            tenant_id=tenant_id,
             **data.model_dump()
         )
         db.add(account)
@@ -55,26 +60,33 @@ class AccountService:
         return account
 
     @staticmethod
-    async def update_account(db: AsyncSession, account_id: str, data: AccountUpdate) -> Optional[Account]:
-        account = await AccountService.get_account_by_id(db, account_id)
+    async def update_account(db: AsyncSession, account_id: str, data: AccountUpdate, tenant_id: str) -> Optional[Account]:
+        account = await AccountService.get_account_by_id(db, account_id, tenant_id)
         if not account:
             return None
         
+        old_values = {k: getattr(account, k) for k, v in data.model_dump(exclude_none=True).items()}
         for k, v in data.model_dump(exclude_none=True).items():
             setattr(account, k, v)
         
         account.updated_at = datetime.utcnow()
         await db.commit()
         await db.refresh(account)
+        # Audit
+        from app.services.audit_service import log_event
+        await log_event(db, tenant_id, account.owner_id, "account", account.id, "updated", new_values=data.model_dump(exclude_none=True), old_values=old_values)
         return account
 
     @staticmethod
-    async def delete_account(db: AsyncSession, account_id: str) -> bool:
-        account = await AccountService.get_account_by_id(db, account_id)
+    async def delete_account(db: AsyncSession, account_id: str, tenant_id: str) -> bool:
+        account = await AccountService.get_account_by_id(db, account_id, tenant_id)
         if not account:
             return False
         
         account.is_deleted = True
         account.updated_at = datetime.utcnow()
         await db.commit()
+        # Audit
+        from app.services.audit_service import log_event
+        await log_event(db, tenant_id, account.owner_id, "account", account.id, "deleted")
         return True

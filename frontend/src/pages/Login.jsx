@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -6,7 +6,7 @@ import * as z from 'zod'
 import toast from 'react-hot-toast'
 import apiClient from '../api/client'
 import { useAuthStore } from '../store/authStore'
-import { LogIn } from 'lucide-react'
+import { LogIn, Eye, EyeOff } from 'lucide-react'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -15,8 +15,15 @@ const loginSchema = z.object({
 
 export default function Login() {
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const setAuth = useAuthStore((s) => s.setAuth)
+  const logout = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    // Clear any stale auth on mount
+    logout()
+  }, [logout])
 
   const {
     register,
@@ -30,7 +37,7 @@ export default function Login() {
     setLoading(true)
     try {
       const response = await apiClient.post('/auth/login', data)
-      setAuth(response.data.user, response.data.access_token)
+      setAuth(response.data.user, response.data.access_token, response.data.refresh_token)
       toast.success('Welcome back!')
       navigate('/dashboard')
     } catch (error) {
@@ -72,7 +79,7 @@ export default function Login() {
                   className={`appearance-none block w-full px-3 py-2 border ${
                     errors.email ? 'border-red-300' : 'border-gray-300'
                   } rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
-                  placeholder="admin@crm.com"
+                  placeholder="you@example.com"
                 />
                 {errors.email && <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>}
               </div>
@@ -82,16 +89,24 @@ export default function Login() {
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
-              <div className="mt-1">
+              <div className="mt-1 relative">
                 <input
                   {...register('password')}
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
-                  className={`appearance-none block w-full px-3 py-2 border ${
+                  className={`appearance-none block w-full px-3 py-2 pr-10 border ${
                     errors.password ? 'border-red-300' : 'border-gray-300'
                   } rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
-                  placeholder="admin123"
+                  placeholder="Enter your password"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
                 {errors.password && <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>}
               </div>
             </div>
@@ -126,15 +141,15 @@ export default function Login() {
               </button>
             </div>
           </form>
+        </div>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
-                Sign up
-              </Link>
-            </p>
-          </div>
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{' '}
+            <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+              Sign up
+            </Link>
+          </p>
         </div>
       </div>
     </div>

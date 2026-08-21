@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, Filter, Calendar, Phone, Mail, CheckCircle, Clock, MoreHorizontal, User } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Search, Filter, Calendar, Phone, Mail, CheckCircle, Clock, MoreHorizontal, User, Download } from 'lucide-react'
 import { activitiesApi } from '../api/activities'
+import { exportToCSV } from '../utils/exportCSV'
 import DataTable from '../components/shared/DataTable'
+import ActivityModal from '../components/activities/ActivityModal'
 import toast from 'react-hot-toast'
 
 export default function Activities() {
@@ -11,6 +14,8 @@ export default function Activities() {
   const [page, setPage] = useState(1)
   const [type, setType] = useState('')
   const [isCompleted, setIsCompleted] = useState('')
+  const [isActivityModalOpen, setActivityModalOpen] = useState(false)
+  const [selectedActivity, setSelectedActivity] = useState(null)
   const limit = 10
 
   const fetchActivities = async () => {
@@ -19,12 +24,12 @@ export default function Activities() {
       const params = {
         page,
         limit,
-        type: type || undefined,
+        activity_type: type || undefined,
         is_completed: isCompleted === '' ? undefined : isCompleted === 'true',
       }
-      const response = await activitiesApi.getAll(params)
-      setData(response.data.data)
-      setTotal(response.data.total)
+        const response = await activitiesApi.getAll(params)
+        setData(response.data?.items || response.data?.data || [])
+        setTotal(response.data?.total || 0)
     } catch (error) {
       toast.error('Failed to fetch activities')
     } finally {
@@ -43,6 +48,23 @@ export default function Activities() {
       fetchActivities()
     } catch (error) {
       toast.error('Failed to update activity')
+    }
+  }
+
+  const handleSaveActivity = async (formData) => {
+    try {
+      if (selectedActivity) {
+        await activitiesApi.update(selectedActivity.id, formData)
+        toast.success('Activity updated')
+      } else {
+        await activitiesApi.create(formData)
+        toast.success('Activity created')
+      }
+      setActivityModalOpen(false)
+      setSelectedActivity(null)
+      fetchActivities()
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to save activity')
     }
   }
 
@@ -136,10 +158,19 @@ export default function Activities() {
             <p className="text-sm text-gray-500 mt-0.5">Track calls, meetings, and follow-up tasks.</p>
           </div>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
-          <Plus className="h-4 w-4" />
-          Log Activity
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => exportToCSV(data, 'activities', ['subject', 'type', 'due_date', 'is_completed', 'assigned_to_name', 'related_to_type', 'created_at'])} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
+            <Download className="h-4 w-4" />
+            Export
+          </button>
+          <button
+            onClick={() => { setSelectedActivity(null); setActivityModalOpen(true) }}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+          >
+            <Plus className="h-4 w-4" />
+            Log Activity
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
@@ -183,6 +214,13 @@ export default function Activities() {
         page={page}
         limit={limit}
         onPageChange={setPage}
+      />
+
+      <ActivityModal
+        isOpen={isActivityModalOpen}
+        onClose={() => setActivityModalOpen(false)}
+        onSave={handleSaveActivity}
+        activity={selectedActivity}
       />
     </div>
   )

@@ -41,7 +41,16 @@ export default function CampaignModal({ isOpen, onClose, onSave, campaign = null
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    onSave(formData)
+    const payload = {
+      name: formData.name,
+      campaign_type: formData.type || 'email',
+      status: formData.status || 'draft',
+      scheduled_at: formData.start_date ? new Date(formData.start_date).toISOString() : null,
+      description: formData.description || '',
+      subject: formData.name,
+      body: formData.description || 'Campaign details'
+    }
+    onSave(payload)
   }
 
   return (

@@ -1,7 +1,7 @@
 import { Trophy, Medal, User, TrendingUp } from 'lucide-react'
 
 export default function LeaderboardWidget({ reps = [] }) {
-  // reps: [{ user_id, full_name, total_closed, revenue_generated, avatar_url }]
+  const repsData = reps?.items || reps || []
   
   const getRankStyle = (index) => {
     switch(index) {
@@ -29,7 +29,7 @@ export default function LeaderboardWidget({ reps = [] }) {
       </div>
 
       <div className="space-y-6 flex-1">
-        {reps.map((rep, index) => (
+        {repsData.map((rep, index) => (
           <div key={rep.user_id} className="flex items-center gap-4 group">
             <div className={`h-8 w-8 rounded-xl flex items-center justify-center text-[10px] font-black ring-4 shadow-sm ${getRankStyle(index)} transition-transform group-hover:scale-110`}>
               {index + 1}
@@ -43,13 +43,13 @@ export default function LeaderboardWidget({ reps = [] }) {
                <div className="flex items-center gap-4 mt-1">
                   <div className="flex items-center gap-1">
                      <span className="text-[10px] font-black text-indigo-600 uppercase tabular-nums">
-                        {rep.total_closed} Deals
+                        {rep.won_count || rep.deal_count || 0} Deals
                      </span>
                   </div>
                   <div className="h-1 w-20 bg-gray-100 rounded-full overflow-hidden">
                      <div 
                         className="bg-indigo-500 h-full rounded-full shadow-[0_0_8px_rgba(99,102,241,0.5)]" 
-                        style={{ width: `${Math.min((rep.total_closed / 10) * 100, 100)}%` }} 
+                        style={{ width: `${Math.min(((rep.won_count || rep.deal_count || 0) / 10) * 100, 100)}%` }} 
                      />
                   </div>
                </div>
@@ -57,14 +57,14 @@ export default function LeaderboardWidget({ reps = [] }) {
 
             <div className="text-right">
                <p className="text-sm font-black text-gray-900 tabular-nums">
-                 {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(rep.total_closed * 14500)}
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(rep.total_value || 0)}
                </p>
                <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-tighter">Revenue</p>
             </div>
           </div>
         ))}
 
-        {reps.length === 0 && (
+        {repsData.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
              <div className="h-12 w-12 rounded-2xl bg-gray-50 flex items-center justify-center mb-3">
                 <Trophy className="h-6 w-6 text-gray-200" />

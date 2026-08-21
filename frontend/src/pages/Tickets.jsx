@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, Filter, MoreHorizontal, MessageSquare, AlertCircle, Clock, CheckCircle2 } from 'lucide-react'
+import { Plus, Search, Filter, MoreHorizontal, MessageSquare, AlertCircle, Clock, CheckCircle2, Download } from 'lucide-react'
 import { ticketsApi } from '../api/tickets'
+import { exportToCSV } from '../utils/exportCSV'
 import DataTable from '../components/shared/DataTable'
+import TicketModal from '../components/tickets/TicketModal'
 import toast from 'react-hot-toast'
 
 export default function Tickets() {
@@ -13,6 +15,8 @@ export default function Tickets() {
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState('')
   const [priority, setPriority] = useState('')
+  const [ticketModalOpen, setTicketModalOpen] = useState(false)
+  const [selectedTicket, setSelectedTicket] = useState(null)
   const limit = 10
 
   const fetchTickets = async () => {
@@ -24,9 +28,9 @@ export default function Tickets() {
         status: status || undefined,
         priority: priority || undefined,
       }
-      const response = await ticketsApi.getAll(params)
-      setData(response.data.data)
-      setTotal(response.data.total)
+        const response = await ticketsApi.getAll(params)
+        setData(response.data?.items || response.data?.data || [])
+        setTotal(response.data?.total || 0)
     } catch (error) {
       toast.error('Failed to fetch tickets')
     } finally {
@@ -37,6 +41,23 @@ export default function Tickets() {
   useEffect(() => {
     fetchTickets()
   }, [page, status, priority])
+
+  const handleSaveTicket = async (formData) => {
+    try {
+      if (selectedTicket) {
+        await ticketsApi.update(selectedTicket.id, formData)
+        toast.success('Ticket updated')
+      } else {
+        await ticketsApi.create(formData)
+        toast.success('Ticket created')
+      }
+      setTicketModalOpen(false)
+      setSelectedTicket(null)
+      fetchTickets()
+    } catch (error) {
+      toast.error('Failed to save ticket')
+    }
+  }
 
   const columns = [
     {
@@ -111,10 +132,19 @@ export default function Tickets() {
             <p className="text-sm text-gray-500 mt-0.5">Manage customer inquiries and technical issues.</p>
           </div>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
-          <Plus className="h-4 w-4" />
-          Create Ticket
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => exportToCSV(data, 'tickets', ['ticket_number', 'subject', 'description', 'status', 'priority', 'assigned_to', 'created_at'])} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
+            <Download className="h-4 w-4" />
+            Export
+          </button>
+          <button
+            onClick={() => { setSelectedTicket(null); setTicketModalOpen(true) }}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+          >
+            <Plus className="h-4 w-4" />
+            Create Ticket
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
@@ -159,6 +189,13 @@ export default function Tickets() {
         limit={limit}
         onPageChange={setPage}
         onRowClick={(row) => navigate(`/tickets/${row.id}`)}
+      />
+
+      <TicketModal
+        isOpen={ticketModalOpen}
+        onClose={() => setTicketModalOpen(false)}
+        onSave={handleSaveTicket}
+        ticket={selectedTicket}
       />
     </div>
   )

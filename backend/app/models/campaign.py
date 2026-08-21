@@ -1,22 +1,29 @@
-import uuid
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from decimal import Decimal
-from sqlalchemy import String, DateTime, Date, Numeric, ForeignKey, Text
-from sqlalchemy.orm import Mapped, mapped_column
-from app.database import Base
+from sqlalchemy import String, Date, DateTime, Integer, Numeric, ForeignKey, Text, Boolean
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.models.base import Base, generate_uuid
 
 
 class Campaign(Base):
-    __tablename__ = "campaigns"
+    __tablename__ = 'campaigns'
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey('tenants.id'), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    type: Mapped[str] = mapped_column(String(20), nullable=False, default="email")
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="draft")
-    start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    budget: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True)
-    owner_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    subject: Mapped[str] = mapped_column(String(500), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default='draft', nullable=False)
+    campaign_type: Mapped[str] = mapped_column(String(50), default='email', nullable=False)
+    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    recipient_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    open_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    click_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    owner_id: Mapped[str] = mapped_column(String(36), ForeignKey('users.id'), nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), nullable=False)
+
+    tenant: Mapped['Tenant'] = relationship(lazy='selectin')
+

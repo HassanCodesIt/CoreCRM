@@ -1,9 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, Filter, Download, MoreHorizontal, X, Phone, MessageSquare, Upload } from 'lucide-react'
+import { Plus, Search, Filter, Download, MoreHorizontal, X, Phone, MessageSquare, Upload, GitMerge, Settings } from 'lucide-react'
 import { contactsApi } from '../api/contacts'
+import { exportToCSV } from '../utils/exportCSV'
+import { useContacts } from '../hooks/useContacts'
 import DataTable from '../components/shared/DataTable'
-import CSVImportModal from '../components/contacts/CSVImportModal'
+import ImportWizard from '../components/contacts/ImportWizard'
+import DuplicateMergeModal from '../components/contacts/DuplicateMergeModal'
+import CustomFieldsSettingsModal from '../components/contacts/CustomFieldsSettingsModal'
+import ContactModal from '../components/contacts/ContactModal'
 import toast from 'react-hot-toast'
 
 const SOURCES = ['Web', 'Referral', 'Inbound Call', 'Social Media', 'Trade Show', 'Other']
@@ -11,7 +16,6 @@ const SOURCES = ['Web', 'Referral', 'Inbound Call', 'Social Media', 'Trade Show'
 export default function Contacts() {
   const navigate = useNavigate()
   const [data, setData] = useState([])
-  const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
@@ -19,34 +23,34 @@ export default function Contacts() {
   const [selectedSources, setSelectedSources] = useState([])
   const [selectedIds, setSelectedIds] = useState([])
   const [isImportModalOpen, setImportModalOpen] = useState(false)
+  const [isMergeModalOpen, setMergeModalOpen] = useState(false)
+  const [isCustomFieldsModalOpen, setCustomFieldsModalOpen] = useState(false)
+  const [isContactModalOpen, setContactModalOpen] = useState(false)
+  const [selectedContact, setSelectedContact] = useState(null)
   const limit = 10
 
-  const fetchContacts = async () => {
-    setLoading(true)
-    try {
-      const params = {
-        page,
-        limit,
-        search: search || undefined,
-        stage: stage || undefined,
-        source: selectedSources.length > 0 ? selectedSources.join(',') : undefined
-      }
-      const response = await contactsApi.getAll(params)
-      setData(response.data.data)
-      setTotal(response.data.total)
-    } catch (error) {
-      toast.error('Failed to fetch contacts')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const queryParams = useMemo(() => ({
+    page,
+    limit,
+    search: search || undefined,
+    stage: stage || undefined,
+    source: selectedSources.length > 0 ? selectedSources.join(',') : undefined
+  }), [page, search, stage, selectedSources])
+
+  const contactsQuery = useContacts(queryParams)
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchContacts()
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [page, search, stage, selectedSources])
+    if (contactsQuery.data) {
+      setData(contactsQuery.data?.items || contactsQuery.data?.data || [])
+      setTotal(contactsQuery.data?.total || 0)
+    }
+  }, [contactsQuery.data])
+
+  useEffect(() => {
+    if (contactsQuery.isError) {
+      toast.error('Failed to fetch contacts')
+    }
+  }, [contactsQuery.isError])
 
   const handleSelectRow = (id) => {
     setSelectedIds(prev => 
@@ -67,9 +71,26 @@ export default function Contacts() {
       await contactsApi.bulkUpdate({ ids: selectedIds, action, value })
       toast.success('Bulk update successful')
       setSelectedIds([])
-      fetchContacts()
+      contactsQuery.refetch()
     } catch (error) {
       toast.error('Bulk update failed')
+    }
+  }
+
+  const handleSaveContact = async (formData) => {
+    try {
+      if (selectedContact) {
+        await contactsApi.update(selectedContact.id, formData)
+        toast.success('Contact updated')
+      } else {
+        await contactsApi.create(formData)
+        toast.success('Contact created')
+      }
+      setContactModalOpen(false)
+      setSelectedContact(null)
+      contactsQuery.refetch()
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to save contact')
     }
   }
 
@@ -179,11 +200,28 @@ export default function Contacts() {
             <Upload className="h-4 w-4" />
             Import
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
+          <button 
+            onClick={() => setMergeModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <GitMerge className="h-4 w-4" />
+            Merge
+          </button>
+          <button 
+            onClick={() => setCustomFieldsModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <Settings className="h-4 w-4" />
+            Fields
+          </button>
+          <button onClick={() => exportToCSV(data, 'contacts', ['first_name', 'last_name', 'email', 'phone', 'company_name', 'title', 'stage', 'lead_source', 'owner_name', 'created_at'])} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
             <Download className="h-4 w-4" />
             Export
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100">
+          <button 
+            onClick={() => { setSelectedContact(null); setContactModalOpen(true) }}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100"
+          >
             <Plus className="h-4 w-4" />
             Add Contact
           </button>
@@ -249,7 +287,7 @@ export default function Contacts() {
       <DataTable 
         columns={columns}
         data={data}
-        loading={loading}
+        loading={contactsQuery.isLoading || contactsQuery.isFetching}
         total={total}
         page={page}
         limit={limit}
@@ -260,10 +298,28 @@ export default function Contacts() {
         onSelectAll={handleSelectAll}
       />
 
-      <CSVImportModal 
-        isOpen={isImportModalOpen} 
-        onClose={() => setImportModalOpen(false)} 
-        onImportSuccess={fetchContacts} 
+      <ImportWizard
+        isOpen={isImportModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onImportSuccess={() => contactsQuery.refetch()}
+      />
+
+      <DuplicateMergeModal
+        isOpen={isMergeModalOpen}
+        onClose={() => setMergeModalOpen(false)}
+        onMergeComplete={() => contactsQuery.refetch()}
+      />
+
+      <CustomFieldsSettingsModal
+        isOpen={isCustomFieldsModalOpen}
+        onClose={() => setCustomFieldsModalOpen(false)}
+      />
+
+      <ContactModal
+        isOpen={isContactModalOpen}
+        onClose={() => { setContactModalOpen(false); setSelectedContact(null) }}
+        onSave={handleSaveContact}
+        contact={selectedContact}
       />
     </div>
   )

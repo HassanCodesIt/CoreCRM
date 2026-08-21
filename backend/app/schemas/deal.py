@@ -1,53 +1,50 @@
 from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime, date
-from decimal import Decimal
-
+from typing import Optional
 
 class DealBase(BaseModel):
     title: str
-    value: Optional[Decimal] = None
+    value: Optional[float] = None
     currency: str = "USD"
-    stage: str = "prospecting"
-    close_date: Optional[date] = None
-    probability: int = 0
+    expected_close_date: Optional[date] = None
+    status: str = "open"
+    notes: Optional[str] = None
     contact_id: Optional[str] = None
     account_id: Optional[str] = None
-    owner_id: Optional[str] = None
-    pipeline_id: int = 1
-    lost_reason: Optional[str] = None
-    description: Optional[str] = None
-
+    pipeline_id: str
+    stage_id: str
 
 class DealCreate(DealBase):
     pass
 
-
 class DealUpdate(BaseModel):
     title: Optional[str] = None
-    value: Optional[Decimal] = None
+    value: Optional[float] = None
     currency: Optional[str] = None
-    stage: Optional[str] = None
-    close_date: Optional[date] = None
-    probability: Optional[int] = None
+    expected_close_date: Optional[date] = None
+    status: Optional[str] = None
+    notes: Optional[str] = None
     contact_id: Optional[str] = None
     account_id: Optional[str] = None
-    owner_id: Optional[str] = None
-    pipeline_id: Optional[int] = None
-    lost_reason: Optional[str] = None
-    description: Optional[str] = None
+    pipeline_id: Optional[str] = None
+    stage_id: Optional[str] = None
+    loss_reason: Optional[str] = None
+    is_rotting: Optional[bool] = None
 
-
-class DealStageUpdate(BaseModel):
-    stage: str
-
-
-class DealResponse(DealBase):
+class DealRead(DealBase):
     id: str
-    is_deleted: bool
+    tenant_id: str
+    owner_id: str
+    actual_close_date: Optional[date] = None
+    closed_at: Optional[datetime] = None
+    loss_reason: Optional[str] = None
+    close_reason: Optional[str] = None
+    amount_final: Optional[float] = None
+    is_rotting: Optional[bool] = None
+    ai_summary: Optional[str] = None
+    ai_health_score: Optional[float] = None
     created_at: datetime
     updated_at: datetime
-    account_name: Optional[str] = None
-    owner_name: Optional[str] = None
 
-    model_config = {"from_attributes": True}
+    class Config:
+        from_attributes = True

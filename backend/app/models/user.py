@@ -1,28 +1,33 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Boolean, DateTime, Enum as SAEnum
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.dialects.sqlite import TEXT
+from sqlalchemy import String, Boolean, DateTime, Enum as SAEnum, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.models.base import Base, TimestampMixin, generate_uuid
 import enum
-from app.database import Base
 
 
 class UserRole(str, enum.Enum):
-    admin = "admin"
-    manager = "manager"
-    rep = "rep"
+    SUPER_ADMIN = "super_admin"
+    ADMIN = "admin"
+    MANAGER = "manager"
+    REP = "rep"
+    VIEWER = "viewer"
 
 
-class User(Base):
+class User(Base, TimestampMixin):
     __tablename__ = "users"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[str] = mapped_column(String(20), default="rep", nullable=False)
+    role: Mapped[UserRole] = mapped_column(SAEnum(UserRole), default=UserRole.REP)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    tenant: Mapped["Tenant"] = relationship("Tenant", back_populates="users")
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+        "RefreshToken", back_populates="user", cascade="all, delete-orphan"
+    )
+

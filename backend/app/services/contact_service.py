@@ -11,6 +11,7 @@ class ContactService:
     @staticmethod
     async def get_contacts(
         db: AsyncSession, 
+        tenant_id: str,
         page: int = 1, 
         limit: int = 20,
         search: Optional[str] = None,
@@ -20,8 +21,8 @@ class ContactService:
         sort_by: str = "created_at",
         sort_dir: str = "desc"
     ) -> Tuple[List[Contact], int]:
-        offset = (page - 1) * limit
-        query = select(Contact).where(Contact.is_deleted == False)
+        offset = (page -1) * limit
+        query = select(Contact).where(Contact.is_deleted == False, Contact.tenant_id == tenant_id)
         
         if search:
             query = query.where(or_(
@@ -50,15 +51,19 @@ class ContactService:
         return result.scalars().all(), total
 
     @staticmethod
-    async def get_contact_by_id(db: AsyncSession, contact_id: str) -> Optional[Contact]:
-        result = await db.execute(select(Contact).where(Contact.id == contact_id, Contact.is_deleted == False))
+    async def get_contact_by_id(db: AsyncSession, contact_id: str, tenant_id: str = None) -> Optional[Contact]:
+        query = select(Contact).where(Contact.id == contact_id, Contact.is_deleted == False)
+        if tenant_id:
+            query = query.where(Contact.tenant_id == tenant_id)
+        result = await db.execute(query)
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def create_contact(db: AsyncSession, data: ContactCreate, owner_id: str) -> Contact:
+    async def create_contact(db: AsyncSession, data: ContactCreate, owner_id: str, tenant_id: str) -> Contact:
         contact = Contact(
             id=str(uuid.uuid4()),
             owner_id=owner_id,
+            tenant_id=tenant_id,
             **data.model_dump()
         )
         db.add(contact)
@@ -67,11 +72,12 @@ class ContactService:
         return contact
 
     @staticmethod
-    async def update_contact(db: AsyncSession, contact_id: str, data: ContactUpdate) -> Optional[Contact]:
-        contact = await ContactService.get_contact_by_id(db, contact_id)
+    async def update_contact(db: AsyncSession, contact_id: str, data: ContactUpdate, tenant_id: str) -> Optional[Contact]:
+        contact = await ContactService.get_contact_by_id(db, contact_id, tenant_id)
         if not contact:
             return None
         
+        old_values = {k: getattr(contact, k) for k, v in data.model_dump(exclude_none=True).items()}
         old_owner_id = contact.owner_id
         for k, v in data.model_dump(exclude_none=True).items():
             setattr(contact, k, v)
@@ -92,22 +98,30 @@ class ContactService:
         contact.updated_at = datetime.utcnow()
         await db.commit()
         await db.refresh(contact)
+        # Audit
+        from app.services.audit_service import log_event
+        await log_event(db, tenant_id, contact.owner_id, "contact", contact.id, "updated", new_values=data.model_dump(exclude_none=True), old_values=old_values)
         return contact
 
     @staticmethod
-    async def delete_contact(db: AsyncSession, contact_id: str) -> bool:
-        contact = await ContactService.get_contact_by_id(db, contact_id)
+    async def delete_contact(db: AsyncSession, contact_id: str, tenant_id: str) -> bool:
+        contact = await ContactService.get_contact_by_id(db, contact_id, tenant_id)
         if not contact:
             return False
         
         contact.is_deleted = True
         contact.updated_at = datetime.utcnow()
         await db.commit()
+        # Audit
+        from app.services.audit_service import log_event
+        await log_event(db, tenant_id, contact.owner_id, "contact", contact.id, "deleted")
         return True
 
     @staticmethod
-    async def bulk_update(db: AsyncSession, ids: List[str], action: str, value: Optional[str] = None) -> int:
+    async def bulk_update(db: AsyncSession, ids: List[str], action: str, value: Optional[str] = None, tenant_id: str = None) -> int:
         query = select(Contact).where(Contact.id.in_(ids), Contact.is_deleted == False)
+        if tenant_id:
+            query = query.where(Contact.tenant_id == tenant_id)
         result = await db.execute(query)
         contacts = result.scalars().all()
         
@@ -127,12 +141,13 @@ class ContactService:
         await db.commit()
         return count
     @staticmethod
-    async def create_contacts_bulk(db: AsyncSession, data: List[ContactCreate], owner_id: str) -> int:
+    async def create_contacts_bulk(db: AsyncSession, data: List[ContactCreate], owner_id: str, tenant_id: str) -> int:
         contacts = []
         for contact_data in data:
             contact = Contact(
                 id=str(uuid.uuid4()),
                 owner_id=owner_id,
+                tenant_id=tenant_id,
                 **contact_data.model_dump()
             )
             db.add(contact)

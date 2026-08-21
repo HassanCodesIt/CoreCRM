@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, Filter, User, TrendingUp, LayoutList, Trello, ChevronRight, Phone, Mail, Building2, Calendar, Tag, MoreHorizontal, Trash2, Edit3, ArrowRight, Sparkles } from 'lucide-react'
+import { Plus, Search, Filter, User, TrendingUp, LayoutList, Trello, ChevronRight, Phone, Mail, Building2, Calendar, Tag, MoreHorizontal, Trash2, Edit3, ArrowRight, Sparkles, Download } from 'lucide-react'
+import { exportToCSV } from '../utils/exportCSV'
 import { DndContext, DragOverlay, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, defaultDropAnimationSideEffects } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -9,13 +10,12 @@ import DataTable from '../components/shared/DataTable'
 import LeadModal from '../components/leads/LeadModal'
 import toast from 'react-hot-toast'
 
+// Kanban stages (four columns as per specification)
 const STATUSES = [
   { id: 'new', title: 'New', color: 'bg-blue-500', border: 'border-blue-200' },
   { id: 'contacted', title: 'Contacted', color: 'bg-amber-500', border: 'border-amber-200' },
   { id: 'qualified', title: 'Qualified', color: 'bg-emerald-500', border: 'border-emerald-200' },
-  { id: 'nurturing', title: 'Nurturing', color: 'bg-violet-500', border: 'border-violet-200' },
-  { id: 'unqualified', title: 'Unqualified', color: 'bg-rose-500', border: 'border-rose-200' },
-  { id: 'converted', title: 'Converted', color: 'bg-indigo-500', border: 'border-indigo-200' },
+  { id: 'lost', title: 'Lost', color: 'bg-rose-500', border: 'border-rose-200' },
 ]
 
 const SOURCES = ['organic', 'paid_search', 'social_media', 'email', 'referral', 'campaign', 'api', 'manual', 'imported']
@@ -37,6 +37,8 @@ export default function Leads() {
   const [selectedIds, setSelectedIds] = useState([])
   const limit = view === 'list' ? 10 : 100
 
+  // Status updates are handled inline to avoid strict dependency on react-query mutation API
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -45,20 +47,32 @@ export default function Leads() {
   const fetchLeads = async () => {
     setLoading(true)
     try {
+      const response = await leadsApi.getAll({ 
+        page: view === 'list' ? page : 1, 
+        limit: view === 'list' ? limit : 100, 
+        search: search || undefined, 
+        status: statusFilter || undefined, 
+        source: sourceFilter || undefined 
+      })
       if (view === 'list') {
-        const response = await leadsApi.getAll({ page, limit, search: search || undefined, status: statusFilter || undefined, source: sourceFilter || undefined })
-        setData(response.data?.data || [])
+        setData(response.data?.items || response.data?.data || [])
         setTotal(response.data?.total || 0)
       } else {
-        const response = await leadsApi.getPipeline()
-        const stages = response.data || STATUSES.reduce((acc, s) => { acc[s.id] = []; return acc }, {})
+        const allLeads = response.data?.items || []
+        const stages = {}
+        STATUSES.forEach(s => { stages[s.id] = [] })
+        allLeads.forEach(lead => {
+          if (stages[lead.status]) {
+            stages[lead.status].push(lead)
+          }
+        })
         setData(stages)
-        setTotal(Object.values(stages).flat().length)
+        setTotal(allLeads.length)
       }
       const statsRes = await leadsApi.getStats()
       setStats(statsRes.data)
     } catch (error) {
-      toast.error('Failed to fetch leads')
+      toast.error(`Failed to fetch leads: ${error?.message ?? 'Unknown error'}`)
     } finally {
       setLoading(false)
     }
@@ -97,11 +111,26 @@ export default function Leads() {
     const isOverColumn = STATUSES.some(s => s.id === over.id)
     if (!isOverColumn) { fetchLeads(); return }
     const lead = Object.values(data).flat().find(l => l.id === activeId)
-    if (lead) {
+  if (lead) {
+      // Optimistic update
+      const previousData = JSON.parse(JSON.stringify(data))
+      const nextStatus = over.id
+      setData(prev => {
+        const newData = { ...prev }
+        const oldList = newData[lead.status] ? [...newData[lead.status]] : []
+        const idx = oldList.findIndex(l => l.id === lead.id)
+        if (idx >= 0) oldList.splice(idx, 1)
+        newData[lead.status] = oldList
+        const movedLead = { ...lead, status: nextStatus }
+        newData[nextStatus] = [...(newData[nextStatus] || []), movedLead]
+        return newData
+      })
       try {
-        await leadsApi.updateStatus(lead.id, { status: over.id })
-        toast.success(`Lead moved to ${STATUSES.find(s => s.id === over.id)?.title}`)
+        await leadsApi.updateStatus(lead.id, { status: nextStatus })
+        toast.success(`Lead moved to ${STATUSES.find(s => s.id === nextStatus)?.title}`)
+        fetchLeads()
       } catch {
+        setData(previousData)
         toast.error('Failed to update status')
         fetchLeads()
       }
@@ -119,7 +148,7 @@ export default function Leads() {
       }
       setIsModalOpen(false)
       fetchLeads()
-    } catch { toast.error('Failed to save lead') }
+    } catch (error) { toast.error(error.response?.data?.detail || 'Failed to save lead') }
   }
 
   const handleDelete = async (id) => {
@@ -162,7 +191,7 @@ export default function Leads() {
         </div>
       ),
     },
-    { key: 'company', label: 'Company', sortable: true, render: (val) => val || <span className="text-gray-400">—</span> },
+    { key: 'company', label: 'Company', sortable: true, render: (val, row) => row.company_name || row.company || <span className="text-gray-400">—</span> },
     { key: 'source', label: 'Source', render: (val) => (
       <span className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600">{val?.replace('_', ' ') || '—'}</span>
     )},
@@ -204,6 +233,16 @@ export default function Leads() {
             <button onClick={() => setView('list')} className={`p-2 rounded-lg transition-all ${view === 'list' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}><LayoutList className="h-4 w-4" /></button>
             <button onClick={() => setView('pipeline')} className={`p-2 rounded-lg transition-all ${view === 'pipeline' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}><Trello className="h-4 w-4" /></button>
           </div>
+          <button onClick={() => {
+            const allLeads = Array.isArray(data) ? data : Object.values(data).flat()
+            if (allLeads.length > 0) {
+              exportToCSV(allLeads, 'leads', ['name', 'email', 'company', 'phone', 'source', 'status', 'score', 'owner_name', 'created_at'])
+            } else {
+              toast.error('No data to export')
+            }
+          }} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
+            <Download className="h-4 w-4" /> Export
+          </button>
           <button onClick={() => { setSelectedLead(null); setIsModalOpen(true) }} className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
             <Plus className="h-4 w-4" /> New Lead
           </button>
@@ -257,7 +296,7 @@ export default function Leads() {
       {loading ? (
         <div className="flex items-center justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>
       ) : view === 'list' ? (
-        <DataTable columns={listColumns} data={data} loading={loading} total={total} page={page} limit={limit} onPageChange={setPage} onRowClick={row => navigate(`/leads/${row.id}`)} selectedIds={selectedIds} onSelectRow={id => setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])} onSelectAll={checked => setSelectedIds(checked ? data.map(d => d.id) : [])} />
+        <DataTable columns={listColumns} data={Array.isArray(data) ? data : []} loading={loading} total={total} page={page} limit={limit} onPageChange={setPage} onRowClick={row => navigate(`/leads/${row.id}`)} selectedIds={selectedIds} onSelectRow={id => setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])} onSelectAll={checked => setSelectedIds(checked ? (Array.isArray(data) ? data.map(d => d.id) : []) : [])} />
       ) : (
         <div className="h-[calc(100vh-340px)] overflow-x-auto pb-4 custom-scrollbar">
           <div className="flex gap-4 h-full min-w-max">
@@ -317,7 +356,7 @@ function LeadCard({ lead, isDragging, isOverlay, onEdit }) {
         <button onClick={e => { e.stopPropagation(); onEdit?.() }} className="p-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-indigo-600 transition-all"><Edit3 className="h-3 w-3" /></button>
       </div>
       <p className="text-sm font-bold text-gray-900 truncate">{lead.name}</p>
-      <p className="text-[10px] text-gray-500 truncate">{lead.company || lead.email}</p>
+      <p className="text-[10px] text-gray-500 truncate">{lead.company_name || lead.company || lead.email}</p>
       <div className="mt-3 flex items-center justify-between">
         <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400"><TrendingUp className="h-3 w-3" />{lead.score}</div>
         <div className="h-5 w-5 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-600 border border-white shadow-sm flex items-center justify-center text-[8px] font-black text-white">{lead.owner_name?.[0] || '?'}</div>

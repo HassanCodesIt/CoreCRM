@@ -1,38 +1,38 @@
 from pydantic import BaseModel
-from typing import Optional, List
-from datetime import datetime, date
-from decimal import Decimal
-
+from datetime import datetime
+from typing import Optional
 
 class CampaignBase(BaseModel):
     name: str
-    type: str = "email"
-    status: str = "draft"
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-    budget: Optional[Decimal] = None
-    owner_id: Optional[str] = None
+    subject: Optional[str] = ""
+    body: Optional[str] = ""
+    campaign_type: Optional[str] = "email"
+    scheduled_at: Optional[datetime] = None
     description: Optional[str] = None
-
+    status: Optional[str] = "draft"
 
 class CampaignCreate(CampaignBase):
     pass
 
-
 class CampaignUpdate(BaseModel):
     name: Optional[str] = None
-    type: Optional[str] = None
-    status: Optional[str] = None
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-    budget: Optional[Decimal] = None
-    owner_id: Optional[str] = None
+    subject: Optional[str] = None
+    body: Optional[str] = None
+    campaign_type: Optional[str] = None
+    scheduled_at: Optional[datetime] = None
     description: Optional[str] = None
+    status: Optional[str] = None
 
-
-class CampaignResponse(CampaignBase):
+class CampaignRead(CampaignBase):
     id: str
+    tenant_id: str
+    owner_id: str
+    sent_at: Optional[datetime] = None
+    recipient_count: int = 0
+    open_count: int = 0
+    click_count: int = 0
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    class Config:
+        from_attributes = True

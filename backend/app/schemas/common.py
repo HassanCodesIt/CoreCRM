@@ -13,6 +13,13 @@ class PaginatedResponse(BaseModel, Generic[T]):
     limit: int
 
 
+class PaginatedItems(BaseModel, Generic[T]):
+    items: List[T]
+    total: int
+    skip: int
+    limit: int
+
+
 class MessageResponse(BaseModel):
     message: str
 

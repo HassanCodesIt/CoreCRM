@@ -10,4 +10,6 @@ export const dashboardApi = {
   getFunnel: () => apiClient.get('/dashboard/funnel'),
   getTopReps: () => apiClient.get('/dashboard/top-reps'),
   getAIInsight: () => apiClient.get('/dashboard/ai-insight'),
+  getTicketStats: () => apiClient.get('/dashboard/ticket-stats'),
+  getStats: () => apiClient.get('/dashboard/stats'),
 }

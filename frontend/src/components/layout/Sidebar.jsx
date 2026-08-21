@@ -24,6 +24,7 @@ const navigation = [
   { name: 'Deals', href: '/deals', icon: Briefcase },
   { name: 'Tickets', href: '/tickets', icon: Ticket },
   { name: 'Activities', href: '/activities', icon: Calendar },
+  { name: 'Calendar', href: '/scheduler', icon: Calendar },
   { name: 'Campaigns', href: '/campaigns', icon: Megaphone },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
 ]
@@ -39,7 +40,7 @@ export default function Sidebar() {
           <div className="bg-indigo-600 p-1.5 rounded-lg shadow-sm">
             <Briefcase className="h-5 w-5 text-white" />
           </div>
-          <span className="text-xl font-bold text-gray-900 tracking-tight">Antigravity CRM</span>
+          <span className="text-xl font-bold text-gray-900 tracking-tight">CoreCRM</span>
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from typing import Optional, List, Tuple
 from app.models.ticket import Ticket
 from app.schemas.ticket import TicketCreate, TicketUpdate, TicketStatusUpdate, TicketAssignUpdate
@@ -10,16 +10,22 @@ class TicketService:
     @staticmethod
     async def get_tickets(
         db: AsyncSession, 
-        page: int = 1, 
-        limit: int = 20,
+        tenant_id: str,
+        skip: int = 0,
+        limit: int = 50,
+        q: Optional[str] = None,
         status: Optional[str] = None,
         priority: Optional[str] = None,
         assignee_id: Optional[str] = None,
         contact_id: Optional[str] = None
     ) -> Tuple[List[Ticket], int]:
-        offset = (page - 1) * limit
-        query = select(Ticket).where(Ticket.is_deleted == False)
+        query = select(Ticket).where(Ticket.is_deleted == False, Ticket.tenant_id == tenant_id)
         
+        if q:
+            query = query.where(or_(
+                Ticket.subject.ilike(f"%{q}%"),
+                Ticket.description.ilike(f"%{q}%")
+            ))
         if status:
             query = query.where(Ticket.status == status)
         if priority:
@@ -32,14 +38,17 @@ class TicketService:
         count_q = select(func.count()).select_from(query.subquery())
         total = (await db.execute(count_q)).scalar()
         
-        query = query.order_by(Ticket.created_at.desc()).offset(offset).limit(limit)
+        query = query.order_by(Ticket.created_at.desc()).offset(skip).limit(limit)
         
         result = await db.execute(query)
         return result.scalars().all(), total
 
     @staticmethod
-    async def get_ticket_by_id(db: AsyncSession, ticket_id: str) -> Optional[Ticket]:
-        result = await db.execute(select(Ticket).where(Ticket.id == ticket_id, Ticket.is_deleted == False))
+    async def get_ticket_by_id(db: AsyncSession, ticket_id: str, tenant_id: str = None) -> Optional[Ticket]:
+        query = select(Ticket).where(Ticket.id == ticket_id, Ticket.is_deleted == False)
+        if tenant_id:
+            query = query.where(Ticket.tenant_id == tenant_id)
+        result = await db.execute(query)
         return result.scalar_one_or_none()
 
     @staticmethod

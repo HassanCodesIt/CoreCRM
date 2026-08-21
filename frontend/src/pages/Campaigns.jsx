@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, Megaphone, Target, Users, TrendingUp, MoreHorizontal, Calendar, ArrowRight, Trash2, Edit3, Filter } from 'lucide-react'
+import { Plus, Search, Megaphone, Target, Users, TrendingUp, MoreHorizontal, Calendar, ArrowRight, Trash2, Edit3, Filter, Download } from 'lucide-react'
 import { campaignsApi } from '../api/campaigns'
+import { exportToCSV } from '../utils/exportCSV'
 import DataTable from '../components/shared/DataTable'
 import CampaignModal from '../components/campaigns/CampaignModal'
 import toast from 'react-hot-toast'
@@ -19,9 +20,9 @@ export default function Campaigns() {
   const fetchCampaigns = async () => {
     setLoading(true)
     try {
-      const response = await campaignsApi.getAll({ page, limit, search, status: statusFilter || undefined })
-      setData(response.data.data)
-      setTotal(response.data.total)
+        const response = await campaignsApi.getAll({ page, limit, search, status: statusFilter || undefined })
+        setData(response.data?.items || response.data?.data || [])
+        setTotal(response.data?.total || 0)
     } catch (error) {
       toast.error('Failed to fetch campaigns')
     } finally {
@@ -147,13 +148,19 @@ export default function Campaigns() {
             <p className="text-sm text-gray-500 mt-0.5 font-medium">Track marketing ROI and lead generation efforts.</p>
           </div>
         </div>
-        <button 
-          onClick={() => { setSelectedCampaign(null); setIsModalOpen(true); }}
-          className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
-        >
-          <Plus className="h-4 w-4" />
-          New Campaign
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => exportToCSV(data, 'campaigns', ['name', 'type', 'status', 'budget', 'start_date', 'end_date', 'leads_count', 'converted_count', 'created_at'])} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
+            <Download className="h-4 w-4" />
+            Export
+          </button>
+          <button 
+            onClick={() => { setSelectedCampaign(null); setIsModalOpen(true); }}
+            className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+          >
+            <Plus className="h-4 w-4" />
+            New Campaign
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

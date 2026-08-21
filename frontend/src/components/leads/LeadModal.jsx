@@ -4,6 +4,13 @@ import { X, User, Mail, Phone, Building2, Globe, Tag, FileText, Zap, ChevronDown
 const SOURCES = ['organic', 'paid_search', 'social_media', 'email', 'referral', 'campaign', 'api', 'manual', 'imported']
 const STATUSES = ['new', 'contacted', 'qualified', 'nurturing', 'unqualified', 'converted']
 
+const normalizeWebsiteUrl = (value) => {
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return `https://${trimmed}`
+}
+
 export default function LeadModal({ isOpen, onClose, onSave, lead }) {
   const [formData, setFormData] = useState({
     name: lead?.name || '',
@@ -27,7 +34,7 @@ export default function LeadModal({ isOpen, onClose, onSave, lead }) {
     e.preventDefault()
     setLoading(true)
     try {
-      await onSave(formData)
+      await onSave({ ...formData, website: normalizeWebsiteUrl(formData.website) })
     } finally {
       setLoading(false)
     }
@@ -100,7 +107,7 @@ export default function LeadModal({ isOpen, onClose, onSave, lead }) {
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Website</label>
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input type="url" value={formData.website} onChange={e => setFormData(p => ({ ...p, website: e.target.value }))} className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-100 font-medium" placeholder="https://acme.com" />
+                <input type="text" inputMode="url" autoComplete="url" value={formData.website} onChange={e => setFormData(p => ({ ...p, website: e.target.value }))} className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-100 font-medium" placeholder="acme.com or https://acme.com" />
               </div>
             </div>
             <div>

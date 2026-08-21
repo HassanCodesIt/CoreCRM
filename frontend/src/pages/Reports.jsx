@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { dashboardApi } from '../api/dashboard'
+import { reportsApi } from '../api/reports'
 import LeaderboardWidget from '../components/dashboard/LeaderboardWidget'
 import toast from 'react-hot-toast'
 import { 
@@ -17,25 +18,60 @@ import {
   Pie,
   Cell
 } from 'recharts'
-import { FileText, Download, Filter, Calendar } from 'lucide-react'
+import { FileText, Download, Filter, Calendar, ChevronDown } from 'lucide-react'
+import { exportToCSV } from '../utils/exportCSV'
 
 export default function Reports() {
   const [loading, setLoading] = useState(true)
   const [topReps, setTopReps] = useState([])
+  const [metrics, setMetrics] = useState(null)
+  const [exportEntity, setExportEntity] = useState('')
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
-    const fetchTopReps = async () => {
+    const fetchData = async () => {
       try {
-        const res = await dashboardApi.getTopReps()
-        setTopReps(res.data)
+        const [repsRes, metricsRes] = await Promise.all([
+          dashboardApi.getTopReps(),
+          reportsApi.getMetrics()
+        ])
+        setTopReps(repsRes.data?.items || repsRes.data || [])
+        setMetrics(metricsRes.data)
       } catch (error) {
-        toast.error('Failed to load top reps')
+        toast.error('Failed to load reports data')
       } finally {
         setLoading(false)
       }
     }
-    fetchTopReps()
+    fetchData()
   }, [])
+
+  const handleExport = async () => {
+    if (!exportEntity) return toast.error('Select an entity to export')
+    if (exportEntity === 'top_reps') {
+      if (topReps.length === 0) return toast.error('No top reps data to export')
+      const exportData = topReps.map(rep => ({
+        ...rep,
+        conversion_rate: rep.deal_count > 0 ? ((rep.won_count / rep.deal_count) * 100).toFixed(1) + '%' : '0%'
+      }))
+      exportToCSV(exportData, 'top_reps_report', ['full_name', 'deal_count', 'total_value', 'won_count', 'conversion_rate'])
+      return
+    }
+
+    setExporting(true)
+    try {
+      const res = await reportsApi.exportEntity(exportEntity)
+      if (res.data && res.data.length > 0) {
+        exportToCSV(res.data, `${exportEntity}_export`, Object.keys(res.data[0]))
+      } else {
+        toast.error(`No data found for ${exportEntity}`)
+      }
+    } catch (error) {
+      toast.error(`Failed to export ${exportEntity}`)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const revenueData = [
     { month: 'Jan', revenue: 45000, targets: 40000 },
@@ -46,14 +82,8 @@ export default function Reports() {
     { month: 'Jun', revenue: 67000, targets: 60000 },
   ]
 
-  const leadSources = [
-    { name: 'Direct', value: 400 },
-    { name: 'Email', value: 300 },
-    { name: 'Social', value: 200 },
-    { name: 'Referral', value: 100 },
-  ]
-
-  const COLORS = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef']
+  const leadSources = metrics?.lead_sources || []
+  const COLORS = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e']
 
   return (
     <div className="space-y-8 pb-12">
@@ -67,16 +97,36 @@ export default function Reports() {
             <p className="text-sm text-gray-500 mt-0.5 font-medium">Deep dive into your business performance.</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-           <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm">
-              <Calendar className="h-4 w-4" />
-              Last 6 Months
-           </button>
-           <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
-              <Download className="h-4 w-4" />
-              Export
-           </button>
-        </div>
+          <div className="flex items-center gap-3">
+            <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm">
+               <Calendar className="h-4 w-4" />
+               Last 6 Months
+            </button>
+            <div className="relative group">
+              <select 
+                className="pl-4 pr-10 py-2 bg-indigo-600 text-white font-bold rounded-xl appearance-none cursor-pointer focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
+                value={exportEntity}
+                onChange={(e) => setExportEntity(e.target.value)}
+                disabled={exporting}
+              >
+                <option value="" disabled>Export Data</option>
+                <option value="contacts">Export Contacts</option>
+                <option value="leads">Export Leads</option>
+                <option value="deals">Export Deals</option>
+                <option value="tickets">Export Tickets</option>
+                <option value="top_reps">Export Top Reps</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white pointer-events-none" />
+            </div>
+            <button 
+              onClick={handleExport}
+              disabled={exporting || !exportEntity}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+               <Download className="h-4 w-4" />
+               {exporting ? 'Exporting...' : 'Export'}
+            </button>
+          </div>
       </div>
 
       <div className="w-full">
@@ -142,17 +192,14 @@ export default function Reports() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
          {/* Micro Stats */}
          {[
-            { label: 'Avg. Deal Size', value: '$12,400', trend: '+5.2%', color: '#6366f1' },
-            { label: 'Win Rate', value: '38%', trend: '+2.1%', color: '#10b981' },
-            { label: 'Sales Cycle', value: '42 Days', trend: '-3 Days', color: '#f59e0b' }
+            { label: 'Avg. Deal Size', value: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(metrics?.avg_deal_size || 0), color: '#6366f1' },
+            { label: 'Win Rate', value: `${(metrics?.win_rate || 0).toFixed(1)}%`, color: '#10b981' },
+            { label: 'Avg. Sales Cycle', value: `${(metrics?.sales_cycle_days || 0).toFixed(1)} Days`, color: '#f59e0b' }
          ].map((stat, i) => (
             <div key={i} className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group">
                <div className="absolute top-0 right-0 h-full w-1 transition-all duration-300 group-hover:w-2" style={{ backgroundColor: stat.color }} />
                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{stat.label}</p>
                <h3 className="text-3xl font-black text-gray-900 tracking-tighter">{stat.value}</h3>
-               <div className="mt-4 flex items-center gap-2">
-                  <span className="text-xs font-bold px-2 py-0.5 bg-gray-50 rounded-lg text-gray-500">{stat.trend} vs last period</span>
-               </div>
             </div>
          ))}
       </div>

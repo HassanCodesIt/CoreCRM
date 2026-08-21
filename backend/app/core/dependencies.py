@@ -1,42 +1,32 @@
-from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from jose import JWTError
-from app.database import get_db
-from app.core.auth import decode_token
-from app.core.exceptions import UnauthorizedError, ForbiddenError
-from app.models.user import User
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+from ..database import get_db
+from ..services.auth_service import get_current_user as auth_get_current_user
+from ..models.user import User, UserRole
 
 
-async def get_current_user(
-    token: str = Depends(oauth2_scheme),
+bearer_scheme = HTTPBearer()
+
+
+async def get_current_active_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    try:
-        payload = decode_token(token)
-        user_id: str = payload.get("sub")
-        if not user_id:
-            raise UnauthorizedError()
-    except JWTError:
-        raise UnauthorizedError()
-
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if not user or not user.is_active:
-        raise UnauthorizedError()
-    return user
+    return await auth_get_current_user(credentials.credentials, db)
 
 
-async def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
-    if current_user.role != "admin":
-        raise ForbiddenError("Admin role required")
-    return current_user
+def require_role(*roles: UserRole):
+    async def checker(current_user: User = Depends(get_current_active_user)):
+        if current_user.role not in roles:
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        return current_user
+    return checker
 
 
-async def get_current_manager_or_admin(current_user: User = Depends(get_current_user)) -> User:
-    if current_user.role not in ("admin", "manager"):
-        raise ForbiddenError("Manager or Admin role required")
-    return current_user
+# Shorthand dependencies
+require_admin = require_role(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+require_manager = require_role(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.MANAGER)
+get_current_admin = require_admin
+get_current_user = get_current_active_user
+get_current_manager_or_admin = require_manager

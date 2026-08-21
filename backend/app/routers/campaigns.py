@@ -1,99 +1,128 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func
 from datetime import datetime
+from uuid import uuid4
 from typing import Optional
-from app.database import get_db
-from app.core.dependencies import get_current_user, get_current_manager_or_admin
-from app.core.exceptions import NotFoundError
+
+from app.core.dependencies import get_current_active_user, get_db
+from app.core.exceptions import NotFoundError, ForbiddenError
 from app.models.campaign import Campaign
 from app.models.contact import Contact
-from app.models.deal import Deal
-from app.models.ticket import Ticket
-from app.schemas.campaign import CampaignCreate, CampaignUpdate, CampaignResponse
-from app.schemas.common import PaginatedResponse
-from app.models.user import User
-import uuid
+from app.schemas.campaign import CampaignCreate, CampaignUpdate, CampaignRead
+from app.services.audit_service import log_event
 
-router = APIRouter(prefix="/campaigns", tags=["campaigns"])
+router = APIRouter(prefix="/campaigns")
 
-
-@router.get("/", response_model=PaginatedResponse[CampaignResponse])
+@router.get("/", response_model=dict)
 async def list_campaigns(
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    skip: int = 0,
+    limit: int = Query(50, le=200),
+    status: Optional[str] = None,
+    q: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user=Depends(get_current_active_user)
 ):
-    query = select(Campaign)
-    total = (await db.execute(select(func.count()).select_from(Campaign))).scalar()
-    campaigns = (await db.execute(query.order_by(Campaign.created_at.desc()).offset((page - 1) * limit).limit(limit))).scalars().all()
-    return PaginatedResponse(data=campaigns, total=total, page=page, limit=limit)
+    query = select(Campaign).where(Campaign.tenant_id == current_user.tenant_id).order_by(Campaign.created_at.desc())
+    if status:
+        query = query.where(Campaign.status == status)
+    if q:
+        query = query.where(Campaign.name.ilike(f"%{q}%") | Campaign.subject.ilike(f"%{q}%"))
+    count_query = select(func.count()).select_from(query.alias())
+    total = (await db.execute(count_query)).scalar_one()
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
+    campaigns = result.scalars().all()
+    return {"items": [CampaignRead.model_validate(c) for c in campaigns], "total": total, "skip": skip, "limit": limit}
 
-
-@router.post("/", response_model=CampaignResponse, status_code=201)
-async def create_campaign(data: CampaignCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_manager_or_admin)):
-    campaign = Campaign(id=str(uuid.uuid4()), owner_id=current_user.id, **data.model_dump(exclude={"owner_id"}))
+@router.post("/", response_model=CampaignRead, status_code=201)
+async def create_campaign(
+    campaign_in: CampaignCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_user)
+):
+    campaign = Campaign(
+        id=str(uuid4()),
+        tenant_id=current_user.tenant_id,
+        owner_id=current_user.id,
+        status=campaign_in.status or "draft",
+        subject=campaign_in.subject or campaign_in.name,
+        body=campaign_in.body or campaign_in.description or "",
+        **campaign_in.model_dump(exclude={"status", "subject", "body"})
+    )
     db.add(campaign)
+    await log_event(db, current_user.tenant_id, current_user.id, "campaign", campaign.id, "created", new_values=campaign_in.model_dump())
     await db.commit()
     await db.refresh(campaign)
     return campaign
 
-
-@router.get("/{campaign_id}", response_model=CampaignResponse)
-async def get_campaign(campaign_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    result = await db.execute(select(Campaign).where(Campaign.id == campaign_id))
+@router.get("/{campaign_id}", response_model=CampaignRead)
+async def get_campaign(
+    campaign_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_user)
+):
+    result = await db.execute(select(Campaign).where(Campaign.id == campaign_id, Campaign.tenant_id == current_user.tenant_id))
     campaign = result.scalar_one_or_none()
     if not campaign:
         raise NotFoundError("Campaign not found")
     return campaign
 
-
-@router.put("/{campaign_id}", response_model=CampaignResponse)
-async def update_campaign(campaign_id: str, data: CampaignUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_manager_or_admin)):
-    result = await db.execute(select(Campaign).where(Campaign.id == campaign_id))
+@router.patch("/{campaign_id}", response_model=CampaignRead)
+async def update_campaign(
+    campaign_id: str,
+    campaign_in: CampaignUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_user)
+):
+    result = await db.execute(select(Campaign).where(Campaign.id == campaign_id, Campaign.tenant_id == current_user.tenant_id))
     campaign = result.scalar_one_or_none()
     if not campaign:
         raise NotFoundError("Campaign not found")
-    for k, v in data.model_dump(exclude_none=True).items():
-        setattr(campaign, k, v)
+    if campaign.status != "draft":
+        raise ForbiddenError("Can only update draft campaigns")
+    old_values = {k: getattr(campaign, k) for k in campaign_in.model_dump(exclude_unset=True).keys()}
+    update_data = campaign_in.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(campaign, key, value)
     campaign.updated_at = datetime.utcnow()
+    await log_event(db, current_user.tenant_id, current_user.id, "campaign", campaign.id, "updated", new_values=update_data, old_values=old_values)
     await db.commit()
     await db.refresh(campaign)
     return campaign
 
-
-@router.delete("/{campaign_id}")
-async def delete_campaign(campaign_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_manager_or_admin)):
-    result = await db.execute(select(Campaign).where(Campaign.id == campaign_id))
+@router.delete("/{campaign_id}", status_code=204)
+async def delete_campaign(
+    campaign_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_user)
+):
+    result = await db.execute(select(Campaign).where(Campaign.id == campaign_id, Campaign.tenant_id == current_user.tenant_id))
     campaign = result.scalar_one_or_none()
     if not campaign:
         raise NotFoundError("Campaign not found")
     await db.delete(campaign)
+    await log_event(db, current_user.tenant_id, current_user.id, "campaign", campaign.id, "deleted")
     await db.commit()
-    return {"message": "Campaign deleted"}
+    return
 
-
-# Global search endpoint
-search_router = APIRouter(prefix="/search", tags=["search"])
-
-
-@search_router.get("/")
-async def global_search(q: str = Query(..., min_length=1), db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    contacts = (await db.execute(
-        select(Contact).where(
-            Contact.is_deleted == False,
-            or_(Contact.first_name.ilike(f"%{q}%"), Contact.last_name.ilike(f"%{q}%"), Contact.email.ilike(f"%{q}%"))
-        ).limit(5)
-    )).scalars().all()
-    deals = (await db.execute(
-        select(Deal).where(Deal.is_deleted == False, Deal.title.ilike(f"%{q}%")).limit(5)
-    )).scalars().all()
-    tickets = (await db.execute(
-        select(Ticket).where(Ticket.is_deleted == False, Ticket.subject.ilike(f"%{q}%")).limit(5)
-    )).scalars().all()
-    return {
-        "contacts": [{"id": c.id, "name": f"{c.first_name} {c.last_name}", "email": c.email, "type": "contact"} for c in contacts],
-        "deals": [{"id": d.id, "title": d.title, "stage": d.stage, "type": "deal"} for d in deals],
-        "tickets": [{"id": t.id, "ticket_number": t.ticket_number, "subject": t.subject, "type": "ticket"} for t in tickets],
-    }
+@router.post("/{campaign_id}/send", response_model=CampaignRead)
+async def send_campaign(
+    campaign_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_user)
+):
+    result = await db.execute(select(Campaign).where(Campaign.id == campaign_id, Campaign.tenant_id == current_user.tenant_id))
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise NotFoundError("Campaign not found")
+    # Count active contacts
+    contact_count = await db.execute(select(func.count(Contact.id)).where(Contact.tenant_id == current_user.tenant_id, Contact.status == "active"))
+    campaign.status = "sent"
+    campaign.sent_at = datetime.utcnow()
+    campaign.recipient_count = contact_count.scalar_one()
+    campaign.updated_at = datetime.utcnow()
+    await log_event(db, current_user.tenant_id, current_user.id, "campaign", campaign.id, "updated", new_values={"status": "sent", "sent_at": str(campaign.sent_at), "recipient_count": campaign.recipient_count})
+    await db.commit()
+    await db.refresh(campaign)
+    return campaign

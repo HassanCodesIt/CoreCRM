@@ -1,19 +1,44 @@
-# Backend
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
 backend/.venv/
-backend/__pycache__/
-backend/*.pyc
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+frontend/.env
 backend/.env
+
+# Database & File Uploads
+*.db
+*.sqlite
+*.sqlite3
 backend/crm_dev.db
 backend/uploads/
+uploads/
 
-# Frontend
+# Frontend & Node
+node_modules/
 frontend/node_modules/
 frontend/dist/
-frontend/.env
-frontend/.env.local
+frontend/build/
 
-# General
-.DS_Store
-Thumbs.db
+# IDE & OS Files
 .vscode/
 .idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Temporary & Unused Directories
+NOT USED/
+scratch/

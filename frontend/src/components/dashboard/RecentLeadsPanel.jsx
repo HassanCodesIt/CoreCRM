@@ -20,7 +20,7 @@ export default function RecentLeadsPanel({ leads = [] }) {
           <p className="text-xs text-gray-500 font-medium">Last 10 potential customers</p>
         </div>
         <button 
-          onClick={() => navigate('/contacts')}
+          onClick={() => navigate('/leads')}
           className="text-[10px] font-black text-indigo-600 uppercase hover:underline underline-offset-4 flex items-center gap-1"
         >
           View All <ExternalLink className="h-3 w-3" />
@@ -43,7 +43,7 @@ export default function RecentLeadsPanel({ leads = [] }) {
               <tr 
                 key={lead.id} 
                 className="group hover:bg-gray-50/50 transition-colors cursor-pointer"
-                onClick={() => navigate(`/contacts/${lead.id}`)}
+                onClick={() => navigate(`/leads/${lead.id}`)}
               >
                 <td className="py-4">
                   <div className="flex items-center gap-3">
@@ -56,7 +56,7 @@ export default function RecentLeadsPanel({ leads = [] }) {
                   </div>
                 </td>
                 <td className="py-4">
-                  <span className="text-xs font-medium text-gray-500">{lead.company}</span>
+                  <span className="text-xs font-medium text-gray-500">{lead.company_name || lead.company}</span>
                 </td>
                 <td className="py-4">
                   <span className="text-xs font-semibold text-gray-600 uppercase tracking-tighter">{lead.lead_source || 'Web'}</span>

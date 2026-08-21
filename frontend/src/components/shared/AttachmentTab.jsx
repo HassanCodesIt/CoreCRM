@@ -9,6 +9,7 @@ export default function AttachmentTab({ referenceType, referenceId }) {
   const [uploading, setUploading] = useState(false)
 
   const fetchAttachments = async () => {
+    setLoading(true)
     try {
       const response = await attachmentsApi.list(referenceType, referenceId)
       setAttachments(response.data)
@@ -104,7 +105,7 @@ export default function AttachmentTab({ referenceType, referenceId }) {
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <a 
-                    href={`http://localhost:8000${file.file_path}`} 
+                    href={`${import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:8000'}${file.file_url || file.file_path}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"

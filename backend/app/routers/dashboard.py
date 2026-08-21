@@ -1,179 +1,409 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from datetime import datetime, timedelta, date
-from decimal import Decimal
-from app.database import get_db
-from app.core.dependencies import get_current_user
+from sqlalchemy import select, func, and_, case
+from sqlalchemy.orm import selectinload
+from datetime import datetime, date, timedelta
+from calendar import monthrange
+from typing import List, Dict, Any
+
+from app.core.dependencies import get_current_active_user, get_db
 from app.models.contact import Contact
+from app.models.lead import Lead
 from app.models.deal import Deal
 from app.models.ticket import Ticket
 from app.models.activity import Activity
+from app.models.pipeline import Pipeline, PipelineStage
 from app.models.user import User
-from app.services.ai_service import AIService
+from app.schemas.dashboard import DashboardStats
+from app.services.ai_service import ai_service
 
-router = APIRouter(prefix="/dashboard", tags=["dashboard"])
+router = APIRouter(prefix="/dashboard")
 
-
-@router.get("/summary")
-async def get_summary(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    total_contacts = (await db.execute(select(func.count()).select_from(Contact).where(Contact.is_deleted == False))).scalar()
-    
+@router.get("/stats", response_model=DashboardStats)
+@router.get("/summary", response_model=DashboardStats)
+async def get_dashboard_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_user)
+):
+    tenant_id = current_user.tenant_id
+    # Total contacts (status != deleted)
+    total_contacts = (await db.execute(select(func.count(Contact.id)).where(Contact.tenant_id == tenant_id, Contact.status != "deleted"))).scalar_one()
+    # Total leads
+    total_leads = (await db.execute(select(func.count(Lead.id)).where(Lead.tenant_id == tenant_id))).scalar_one()
+    # Total deals
+    total_deals = (await db.execute(select(func.count(Deal.id)).where(Deal.tenant_id == tenant_id))).scalar_one()
+    # Open deals
+    open_deals = (await db.execute(select(func.count(Deal.id)).where(Deal.tenant_id == tenant_id, Deal.status == "open"))).scalar_one()
+    # Total pipeline value (open deals)
+    total_pipeline_value = (await db.execute(select(func.sum(Deal.value)).where(Deal.tenant_id == tenant_id, Deal.status == "open"))).scalar_one() or 0.0
+    # Current month
+    today = date.today()
+    first_day = today.replace(day=1)
+    last_day = today.replace(day=monthrange(today.year, today.month)[1])
     # Leads this month
-    month_start = date.today().replace(day=1)
-    month_start_dt = datetime.combine(month_start, datetime.min.time())
-    leads_this_month = (await db.execute(
-        select(func.count()).select_from(Contact).where(Contact.is_deleted == False, Contact.created_at >= month_start_dt)
-    )).scalar()
+    leads_this_month = (await db.execute(select(func.count(Lead.id)).where(Lead.tenant_id == tenant_id, Lead.created_at >= first_day, Lead.created_at <= last_day))).scalar_one()
+    # Won deals this month
+    won_deals_this_month = (await db.execute(select(func.count(Deal.id)).where(Deal.tenant_id == tenant_id, Deal.status == "won", Deal.actual_close_date >= first_day, Deal.actual_close_date <= last_day))).scalar_one()
+    # Revenue this month (won deals)
+    revenue_this_month = (await db.execute(select(func.sum(Deal.value)).where(Deal.tenant_id == tenant_id, Deal.status == "won", Deal.actual_close_date >= first_day, Deal.actual_close_date <= last_day))).scalar_one() or 0.0
+    # Total all-time revenue (all won deals)
+    total_revenue = (await db.execute(select(func.sum(Deal.value)).where(Deal.tenant_id == tenant_id, Deal.status == "won"))).scalar_one() or 0.0
+    # Open tickets
+    open_tickets = (await db.execute(select(func.count(Ticket.id)).where(Ticket.tenant_id == tenant_id, Ticket.status == "open"))).scalar_one()
+    # Conversion rate (converted leads / total leads) - as percentage
+    converted_leads = (await db.execute(select(func.count(Lead.id)).where(Lead.tenant_id == tenant_id, Lead.converted == True))).scalar_one()
+    conversion_rate = float(round(converted_leads / total_leads * 100)) if total_leads > 0 else 0.0
+    # Rotting deals
+    rotting_deals = (await db.execute(select(func.count(Deal.id)).where(Deal.tenant_id == tenant_id, Deal.status == "open", Deal.is_rotting == True))).scalar_one()
 
-    # Deals metrics
-    total_deals = (await db.execute(select(func.count()).select_from(Deal).where(Deal.is_deleted == False))).scalar()
-    active_deals = (await db.execute(select(func.count()).select_from(Deal).where(Deal.is_deleted == False, Deal.stage.notin_(["closed_won", "closed_lost"])))).scalar()
-    
-    closed_won_deals = (await db.execute(select(func.count()).select_from(Deal).where(Deal.is_deleted == False, Deal.stage == "closed_won"))).scalar()
-    
-    # Conversion Rate: (closed_won / total_deals) * 100
-    conversion_rate = round((closed_won_deals / total_deals * 100), 1) if total_deals > 0 else 0.0
-
-    # Revenue
-    total_revenue_result = await db.execute(select(func.sum(Deal.value)).where(Deal.stage == "closed_won", Deal.is_deleted == False))
-    total_revenue = total_revenue_result.scalar() or Decimal(0)
-    
-    revenue_this_month_result = await db.execute(
-        select(func.sum(Deal.value)).where(Deal.stage == "closed_won", Deal.is_deleted == False, Deal.updated_at >= month_start_dt)
+    return DashboardStats(
+        total_contacts=total_contacts,
+        total_leads=total_leads,
+        total_deals=total_deals,
+        open_deals=open_deals,
+        total_pipeline_value=float(total_pipeline_value),
+        won_deals_this_month=won_deals_this_month,
+        revenue_this_month=float(revenue_this_month),
+        total_revenue=float(total_revenue),
+        leads_this_month=leads_this_month,
+        open_tickets=open_tickets,
+        conversion_rate=conversion_rate,
+        rotting_deals=rotting_deals
     )
-    revenue_this_month = revenue_this_month_result.scalar() or Decimal(0)
 
-    open_tickets = (await db.execute(select(func.count()).select_from(Ticket).where(Ticket.status == "open", Ticket.is_deleted == False))).scalar()
-
-    return {
-        "total_contacts": total_contacts,
-        "leads_this_month": leads_this_month,
-        "total_deals": active_deals, # frontend expects active_deals here for "Active Deals" card
-        "total_deals_all": total_deals,
-        "conversion_rate": conversion_rate,
-        "total_revenue": float(total_revenue),
-        "revenue_this_month": float(revenue_this_month),
-        "open_tickets": open_tickets,
-    }
-
-
-@router.get("/pipeline")
-async def get_pipeline_by_stage(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    stages = ["prospecting", "qualified", "proposal", "negotiation", "closed_won", "closed_lost"]
-    result = {}
-    for stage in stages:
-        count = (await db.execute(select(func.count()).select_from(Deal).where(Deal.stage == stage, Deal.is_deleted == False))).scalar()
-        val = (await db.execute(select(func.sum(Deal.value)).where(Deal.stage == stage, Deal.is_deleted == False))).scalar()
-        result[stage] = {"count": count, "total_value": float(val or 0)}
+@router.get("/pipeline-overview", response_model=List[Dict])
+@router.get("/pipeline", response_model=List[Dict])
+async def get_pipeline_overview(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_user)
+):
+    tenant_id = current_user.tenant_id
+    pipelines = (await db.execute(select(Pipeline).where(Pipeline.tenant_id == tenant_id).options(selectinload(Pipeline.stages)))).scalars().all()
+    result = []
+    for pipeline in pipelines:
+        stages_data = []
+        for stage in pipeline.stages:
+            deal_count = (await db.execute(select(func.count(Deal.id)).where(Deal.stage_id == stage.id, Deal.tenant_id == tenant_id))).scalar_one()
+            total_value = (await db.execute(select(func.sum(Deal.value)).where(Deal.stage_id == stage.id, Deal.tenant_id == tenant_id))).scalar_one() or 0.0
+            stages_data.append({
+                "stage_id": stage.id,
+                "stage_name": stage.name,
+                "deal_count": deal_count,
+                "total_value": float(total_value)
+            })
+        result.append({
+            "pipeline_id": pipeline.id,
+            "pipeline_name": pipeline.name,
+            "stages": stages_data
+        })
     return result
 
+@router.get("/recent-activities", response_model=Dict[str, Any])
+@router.get("/activities", response_model=Dict[str, Any])
+async def get_recent_activities(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_user),
+    skip: int = Query(0),
+    limit: int = Query(20, le=50)
+):
+    tenant_id = current_user.tenant_id
+    # Get total count
+    total = (await db.execute(select(func.count(Activity.id)).where(Activity.tenant_id == tenant_id))).scalar_one()
+    # Get paginated results
+    activities = (await db.execute(
+        select(Activity).where(Activity.tenant_id == tenant_id).order_by(Activity.created_at.desc()).offset(skip).limit(limit)
+    )).scalars().all()
+    return {
+        "items": [{
+            "id": a.id,
+            "entity_type": a.entity_type,
+            "entity_id": a.entity_id,
+            "activity_type": a.activity_type,
+            "subject": a.subject,
+            "created_at": a.created_at
+        } for a in activities],
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
-@router.get("/recent-leads")
-async def get_recent_leads(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    # Join with Account to get company name
-    # Contact model doesn't have direct account_name, it has account_id and account relation
-    # But usually contacts have account relation
-    query = select(Contact).where(Contact.is_deleted == False).order_by(Contact.created_at.desc()).limit(10)
-    result = await db.execute(query)
-    contacts = result.scalars().all()
-    
-    leads = []
-    for c in contacts:
-        # Assuming account relation exists as 'account'
-        leads.append({
-            "id": c.id,
-            "full_name": f"{c.first_name} {c.last_name}",
-            "company": c.account.name if c.account else "Individual",
-            "lead_source": c.source,
-            "contact_stage": c.contact_stage,
-            "owner_name": c.owner.full_name if c.owner else "Unassigned"
-        })
-    return leads
-
-
-@router.get("/funnel")
-async def get_funnel_data(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    # Funnel steps: Total Leads -> Contacted -> Qualified -> Proposal Sent -> Closed Won
-    # Total Leads = All active contacts
-    total_leads = (await db.execute(select(func.count()).select_from(Contact).where(Contact.is_deleted == False))).scalar()
-    # Contacted = status != 'lead' (assuming 'lead' is initial)
-    contacted = (await db.execute(select(func.count()).select_from(Contact).where(Contact.is_deleted == False, Contact.contact_stage != "lead"))).scalar()
-    # Qualified = stage 'qualified' in deals or 'qualified' in contacts
-    qualified = (await db.execute(select(func.count()).select_from(Deal).where(Deal.is_deleted == False, Deal.stage != "prospecting"))).scalar()
-    # Proposal Sent = stage 'proposal' or later
-    proposal = (await db.execute(select(func.count()).select_from(Deal).where(Deal.is_deleted == False, Deal.stage.in_(["proposal", "negotiation", "closed_won"])))).scalar()
-    # Closed Won
-    closed_won = (await db.execute(select(func.count()).select_from(Deal).where(Deal.is_deleted == False, Deal.stage == "closed_won"))).scalar()
-    
-    return [
-        {"stage": "Total Leads", "count": total_leads},
-        {"stage": "Contacted", "count": contacted},
-        {"stage": "Qualified", "count": qualified},
-        {"stage": "Proposal Sent", "count": proposal},
-        {"stage": "Closed Won", "count": closed_won}
-    ]
-
-
-@router.get("/activities")
-async def get_recent_activity(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    result = await db.execute(select(Activity).order_by(Activity.created_at.desc()).limit(20))
-    return result.scalars().all()
-
-
-@router.get("/deals-closing-soon")
-async def get_deals_closing(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    today = date.today()
-    in_30 = today + timedelta(days=30)
-    result = await db.execute(
+@router.get("/deals-closing-soon", response_model=Dict[str, Any])
+async def get_deals_closing_soon(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_user),
+    days: int = Query(7, ge=1, le=30),
+    skip: int = Query(0),
+    limit: int = Query(20, le=50)
+):
+    tenant_id = current_user.tenant_id
+    cutoff_date = date.today() + timedelta(days=days)
+    # Get total count
+    total = (await db.execute(
+        select(func.count(Deal.id)).where(
+            Deal.tenant_id == tenant_id,
+            Deal.status == "open",
+            Deal.expected_close_date != None,
+            Deal.expected_close_date <= cutoff_date
+        )
+    )).scalar_one()
+    # Get paginated results
+    deals = (await db.execute(
         select(Deal).where(
-            Deal.close_date >= today,
-            Deal.close_date <= in_30,
-            Deal.is_deleted == False,
-            Deal.stage.notin_(["closed_won", "closed_lost"]),
-        ).order_by(Deal.close_date)
-    )
-    return result.scalars().all()
+            Deal.tenant_id == tenant_id,
+            Deal.status == "open",
+            Deal.expected_close_date != None,
+            Deal.expected_close_date <= cutoff_date
+        ).order_by(Deal.expected_close_date).offset(skip).limit(limit)
+    )).scalars().all()
+    return {
+        "items": [{
+            "id": d.id,
+            "title": d.title,
+            "value": float(d.value) if d.value else 0.0,
+            "expected_close_date": d.expected_close_date,
+            "stage_id": d.stage_id,
+            "contact_id": d.contact_id,
+            "account_id": d.account_id,
+            "probability": d.stage.probability if d.stage else 0,
+            "is_rotting": d.is_rotting
+        } for d in deals],
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
+@router.get("/tickets", response_model=Dict[str, Any])
+async def get_dashboard_tickets(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_user),
+    status: str = Query("open"),
+    skip: int = Query(0),
+    limit: int = Query(20, le=50)
+):
+    tenant_id = current_user.tenant_id
+    query = select(Ticket).where(Ticket.tenant_id == tenant_id)
+    if status != "all":
+        query = query.where(Ticket.status == status)
+    # Get total count
+    total = (await db.execute(select(func.count(Ticket.id)).where(Ticket.tenant_id == tenant_id, Ticket.status == status if status != "all" else True))).scalar_one()
+    # Get paginated results
+    tickets = (await db.execute(query.order_by(Ticket.created_at.desc()).offset(skip).limit(limit))).scalars().all()
+    return {
+        "items": [{
+            "id": t.id,
+            "subject": t.subject,
+            "status": t.status,
+            "priority": t.priority,
+            "contact_id": t.contact_id,
+            "account_id": t.account_id,
+            "created_at": t.created_at
+        } for t in tickets],
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
-@router.get("/tickets")
-async def get_ticket_stats(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    statuses = ["open", "pending", "resolved", "closed"]
-    priorities = ["low", "medium", "high", "urgent"]
-    by_status = {}
-    for s in statuses:
-        by_status[s] = (await db.execute(select(func.count()).select_from(Ticket).where(Ticket.status == s, Ticket.is_deleted == False))).scalar()
-    by_priority = {}
-    for p in priorities:
-        by_priority[p] = (await db.execute(select(func.count()).select_from(Ticket).where(Ticket.priority == p, Ticket.is_deleted == False))).scalar()
-    return {"by_status": by_status, "by_priority": by_priority}
-
-
-@router.get("/top-reps")
-async def get_top_reps(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    month_start = date.today().replace(day=1)
-    result = await db.execute(
-        select(Deal.owner_id, func.sum(Deal.value).label("total"))
-        .where(Deal.stage == "closed_won", Deal.is_deleted == False, Deal.updated_at >= datetime.combine(month_start, datetime.min.time()))
-        .group_by(Deal.owner_id)
-        .order_by(func.sum(Deal.value).desc())
-        .limit(5)
-    )
-    rows = result.all()
-    top_reps = []
-    for row in rows:
-        user_result = await db.execute(select(User).where(User.id == row.owner_id))
-        user = user_result.scalar_one_or_none()
-        top_reps.append({"user_id": row.owner_id, "full_name": user.full_name if user else "Unknown", "total_closed": float(row.total or 0)})
-    return top_reps
-@router.get("/ai-insight")
-async def get_ai_insight(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    # Fetch some summary data for context
-    total_deals = (await db.execute(select(func.count()).select_from(Deal).where(Deal.is_deleted == False))).scalar()
-    won_deals = (await db.execute(select(func.count()).select_from(Deal).where(Deal.stage == "closed_won", Deal.is_deleted == False))).scalar()
-    total_rev = (await db.execute(select(func.sum(Deal.value)).where(Deal.stage == "closed_won", Deal.is_deleted == False))).scalar() or 0
-    open_tickets = (await db.execute(select(func.count()).select_from(Ticket).where(Ticket.status == "open", Ticket.is_deleted == False))).scalar()
+@router.get("/ticket-stats", response_model=Dict[str, Any])
+async def get_ticket_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_user)
+):
+    tenant_id = current_user.tenant_id
+    # Get all tickets for this tenant
+    tickets = (await db.execute(
+        select(Ticket).where(Ticket.tenant_id == tenant_id)
+    )).scalars().all()
     
-    context = f"Total Deals: {total_deals}, Won Deals: {won_deals}, Total Revenue: ${float(total_rev):,.2f}, Open Tickets: {open_tickets}."
-    insight = await AIService.get_insight(context)
-    return {"insight": insight}
+    # Calculate stats manually
+    by_status = {}
+    resolved_tickets = []
+    
+    for ticket in tickets:
+        status = ticket.status or 'unknown'
+        by_status[status] = by_status.get(status, 0) + 1
+        
+        if status == 'resolved' and ticket.resolved_at and ticket.created_at:
+            # Calculate resolution time in hours
+            delta = ticket.resolved_at - ticket.created_at
+            hours = delta.total_seconds() / 3600
+            resolved_tickets.append(hours)
+    
+    # Calculate stats
+    open_count = by_status.get('open', 0)
+    pending_count = by_status.get('pending', 0)
+    resolved_count = by_status.get('resolved', 0)
+    avg_resolution = sum(resolved_tickets) / len(resolved_tickets) if resolved_tickets else 0
+    
+    # Count SLA breaches (> 24 hours)
+    sla_breach_count = len([h for h in resolved_tickets if h > 24])
+    
+    return {
+        "by_status": by_status,
+        "open_count": open_count,
+        "pending": pending_count,
+        "resolved": resolved_count,
+        "avg_resolution_hours": round(avg_resolution, 2),
+        "sla_breach_count": sla_breach_count
+    }
+
+@router.get("/top-reps", response_model=Dict[str, Any])
+async def get_top_reps(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_user),
+    skip: int = Query(0),
+    limit: int = Query(10, le=50)
+):
+    tenant_id = current_user.tenant_id
+    # Get total count of users with deals
+    total = (await db.execute(
+        select(func.count(func.distinct(User.id))).outerjoin(Deal, and_(Deal.owner_id == User.id, Deal.tenant_id == tenant_id)).where(User.tenant_id == tenant_id)
+    )).scalar_one()
+    # Get users with deal counts and values
+    results = (await db.execute(
+        select(
+            User.id,
+            User.full_name,
+            func.count(Deal.id).label('deal_count'),
+            func.sum(Deal.value).label('total_value'),
+            func.sum(case((Deal.status == "won", 1), else_=0)).label('won_count')
+        )
+        .outerjoin(Deal, and_(Deal.owner_id == User.id, Deal.tenant_id == tenant_id))
+        .where(User.tenant_id == tenant_id)
+        .group_by(User.id, User.full_name)
+        .order_by(func.count(Deal.id).desc())
+        .offset(skip)
+        .limit(limit)
+    )).all()
+    return {
+        "items": [{
+            "user_id": r[0],
+            "full_name": r[1],
+            "deal_count": r[2],
+            "total_value": float(r[3]) if r[3] else 0.0,
+            "won_count": r[4]
+        } for r in results],
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
+
+@router.get("/ai-insight", response_model=Dict[str, Any])
+async def get_ai_insight(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_user)
+):
+    tenant_id = current_user.tenant_id
+    
+    # Total contacts
+    total_contacts = (await db.execute(select(func.count(Contact.id)).where(Contact.tenant_id == tenant_id, Contact.status != "deleted"))).scalar_one()
+    # Total leads
+    total_leads = (await db.execute(select(func.count(Lead.id)).where(Lead.tenant_id == tenant_id))).scalar_one()
+    # Total deals
+    total_deals = (await db.execute(select(func.count(Deal.id)).where(Deal.tenant_id == tenant_id))).scalar_one()
+    # Open deals
+    open_deals = (await db.execute(select(func.count(Deal.id)).where(Deal.tenant_id == tenant_id, Deal.status == "open"))).scalar_one()
+    # Total pipeline value
+    total_pipeline_value = (await db.execute(select(func.sum(Deal.value)).where(Deal.tenant_id == tenant_id, Deal.status == "open"))).scalar_one() or 0.0
+    # Open tickets
+    open_tickets = (await db.execute(select(func.count(Ticket.id)).where(Ticket.tenant_id == tenant_id, Ticket.status == "open"))).scalar_one()
+    # Total all-time revenue
+    total_revenue = (await db.execute(select(func.sum(Deal.value)).where(Deal.tenant_id == tenant_id, Deal.status == "won"))).scalar_one() or 0.0
+    
+    # Calculate conversion rate
+    converted_leads = (await db.execute(select(func.count(Lead.id)).where(Lead.tenant_id == tenant_id, Lead.converted == True))).scalar_one()
+    conversion_rate = float(round(converted_leads / total_leads * 100)) if total_leads > 0 else 0.0
+
+    rotting_deals = (await db.execute(select(func.count(Deal.id)).where(Deal.tenant_id == tenant_id, Deal.status == "open", Deal.is_rotting == True))).scalar_one()
+
+    context = (
+        f"Total Contacts: {total_contacts}\n"
+        f"Total Leads: {total_leads}\n"
+        f"Total Deals: {total_deals} ({open_deals} open)\n"
+        f"Total Pipeline Value: ${total_pipeline_value:,.2f}\n"
+        f"Total Revenue: ${total_revenue:,.2f}\n"
+        f"Open Support Tickets: {open_tickets}\n"
+        f"Rotting Deals (no activity): {rotting_deals}\n"
+        f"Conversion Rate: {int(conversion_rate)}%"
+    )
+    
+    insight_text = await ai_service.get_insight(context)
+    insights = [s.strip() for s in insight_text.split(". ") if s.strip()]
+    insights = [s if s.endswith(".") else s + "." for s in insights]
+
+    return {
+        "insights": insights,
+        "recommendations": [
+            "Focus on high-scoring leads first",
+            "Review stalled deals in negotiation stage"
+        ]
+    }
+
+@router.get("/funnel", response_model=Dict[str, Any])
+async def get_sales_funnel(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_user)
+):
+    tenant_id = current_user.tenant_id
+    # Count leads
+    total_leads = (await db.execute(select(func.count(Lead.id)).where(Lead.tenant_id == tenant_id))).scalar_one()
+    converted_leads = (await db.execute(select(func.count(Lead.id)).where(Lead.tenant_id == tenant_id, Lead.converted == True))).scalar_one()
+    # Count contacts created from leads
+    contacts_from_leads = (await db.execute(select(func.count(Contact.id)).where(Contact.tenant_id == tenant_id, Contact.lead_source == "lead_conversion"))).scalar_one()
+    # Count deals
+    total_deals = (await db.execute(select(func.count(Deal.id)).where(Deal.tenant_id == tenant_id))).scalar_one()
+    won_deals = (await db.execute(select(func.count(Deal.id)).where(Deal.tenant_id == tenant_id, Deal.status == "won"))).scalar_one()
+    # Calculate values
+    pipeline_value = (await db.execute(select(func.sum(Deal.value)).where(Deal.tenant_id == tenant_id, Deal.status == "open"))).scalar_one() or 0.0
+    won_value = (await db.execute(select(func.sum(Deal.value)).where(Deal.tenant_id == tenant_id, Deal.status == "won"))).scalar_one() or 0.0
+    return {
+        "leads": {
+            "total": total_leads,
+            "converted": converted_leads,
+            "conversion_rate": round(converted_leads / total_leads * 100) if total_leads > 0 else 0
+        },
+        "contacts": {
+            "from_leads": contacts_from_leads
+        },
+        "deals": {
+            "total": total_deals,
+            "won": won_deals,
+            "win_rate": (won_deals / total_deals * 100) if total_deals > 0 else 0,
+            "pipeline_value": float(pipeline_value),
+            "won_value": float(won_value)
+        }
+    }
+
+@router.get("/recent-leads", response_model=Dict[str, Any])
+async def get_recent_leads(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_user),
+    skip: int = Query(0),
+    limit: int = Query(20, le=50)
+):
+    tenant_id = current_user.tenant_id
+    # Get total count
+    total = (await db.execute(select(func.count(Lead.id)).where(Lead.tenant_id == tenant_id))).scalar_one()
+    # Get paginated results
+    leads = (await db.execute(
+        select(Lead).where(Lead.tenant_id == tenant_id).order_by(Lead.created_at.desc()).offset(skip).limit(limit)
+    )).scalars().all()
+    return {
+        "items": [{
+            "id": l.id,
+            "first_name": l.first_name,
+            "last_name": l.last_name,
+            "full_name": f"{l.first_name} {l.last_name}",
+            "email": l.email,
+            "company_name": l.company_name,
+            "company": l.company_name or l.company,
+            "lead_source": l.source,
+            "status": l.status,
+            "contact_stage": l.status,
+            "owner_name": l.owner.full_name if l.owner else "Unassigned",
+            "score": l.score,
+            "created_at": l.created_at
+        } for l in leads],
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }

@@ -9,6 +9,7 @@ from app.models.user import User
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
+@router.get("")
 @router.get("/")
 async def list_notifications(
     limit: int = Query(20, ge=1, le=100),

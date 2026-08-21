@@ -12,12 +12,15 @@ import Accounts from './pages/Accounts'
 import AccountDetail from './pages/AccountDetail'
 import Deals from './pages/Deals'
 import DealDetail from './pages/DealDetail'
+import PipelineSettingsPage from './pages/deals/PipelineSettingsPage'
 import Tickets from './pages/Tickets'
 import TicketDetail from './pages/TicketDetail'
 import Activities from './pages/Activities'
 import Campaigns from './pages/Campaigns'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
+import Scheduler from './pages/Scheduler'
+import PublicBooking from './pages/PublicBooking'
 
 function PrivateRoute({ children }) {
   const token = useAuthStore((s) => s.token)
@@ -30,6 +33,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/book/:userId" element={<PublicBooking />} />
         <Route
           path="/"
           element={
@@ -47,10 +51,12 @@ export default function App() {
           <Route path="accounts" element={<Accounts />} />
           <Route path="accounts/:id" element={<AccountDetail />} />
           <Route path="deals" element={<Deals />} />
+          <Route path="deals/pipelines" element={<PipelineSettingsPage />} />
           <Route path="deals/:id" element={<DealDetail />} />
           <Route path="tickets" element={<Tickets />} />
           <Route path="tickets/:id" element={<TicketDetail />} />
           <Route path="activities" element={<Activities />} />
+          <Route path="scheduler" element={<Scheduler />} />
           <Route path="campaigns" element={<Campaigns />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />

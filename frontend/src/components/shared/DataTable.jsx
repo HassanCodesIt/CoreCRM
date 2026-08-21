@@ -1,12 +1,12 @@
 import { ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react'
 
-export default function DataTable({ 
-  columns, 
-  data, 
-  loading, 
-  total, 
-  page, 
-  limit, 
+export default function DataTable({
+  columns,
+  data = [],
+  loading,
+  total = 0,
+  page = 1,
+  limit = 10,
   onPageChange,
   onRowClick,
   onSort,
@@ -26,7 +26,7 @@ export default function DataTable({
                 <input 
                   type="checkbox" 
                   className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
-                  checked={data.length > 0 && selectedIds.length === data.length}
+                  checked={(data || []).length > 0 && selectedIds.length === (data || []).length}
                   onChange={(e) => onSelectAll?.(e.target.checked)}
                 />
               </th>
@@ -63,7 +63,7 @@ export default function DataTable({
                 </td>
               </tr>
             ) : (
-              data.map((row, rowIdx) => (
+              (data || []).map((row, rowIdx) => (
                 <tr 
                   key={row.id || rowIdx} 
                   className={`${selectedIds.includes(row.id) ? 'bg-indigo-50/30' : 'hover:bg-gray-50'} transition-colors cursor-pointer`}

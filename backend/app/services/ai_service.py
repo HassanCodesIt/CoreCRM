@@ -24,7 +24,7 @@ class AIService:
 
         try:
             completion = client.chat.completions.create(
-                model="openai/gpt-oss-120b",
+                model="llama-3.1-8b-instant",
                 messages=[
                     {
                         "role": "system",
@@ -60,7 +60,7 @@ class AIService:
                     activity_text += "\n"
 
             completion = client.chat.completions.create(
-                model="openai/gpt-oss-120b",
+                model="llama-3.1-8b-instant",
                 messages=[
                     {
                         "role": "system",
@@ -95,7 +95,7 @@ class AIService:
                 score_info += f"\n- {evt.action}: {evt.score_delta:+d} pts"
 
             completion = client.chat.completions.create(
-                model="openai/gpt-oss-120b",
+                model="llama-3.1-8b-instant",
                 messages=[
                     {
                         "role": "system",
@@ -124,9 +124,9 @@ Respond ONLY in this exact JSON format:
             import json
             result_text = completion.choices[0].message.content
             result_text = result_text.strip()
-            if result_text.startswith("```json"):
+            if result_text.startswith("json"):
                 result_text = result_text[7:]
-            if result_text.endswith("```"):
+            if result_text.endswith(""):
                 result_text = result_text[:-3]
             result_text = result_text.strip()
 
@@ -194,7 +194,7 @@ Respond ONLY in this exact JSON format:
 {{"subject": "email subject line (max 60 chars)", "body": "email body (150-300 words)"}}
 """
             completion = client.chat.completions.create(
-                model="openai/gpt-oss-120b",
+                model="llama-3.1-8b-instant",
                 messages=[
                     {
                         "role": "system",
@@ -212,9 +212,9 @@ Respond ONLY in this exact JSON format:
             import json
             result_text = completion.choices[0].message.content
             result_text = result_text.strip()
-            if result_text.startswith("```json"):
+            if result_text.startswith("json"):
                 result_text = result_text[7:]
-            if result_text.endswith("```"):
+            if result_text.endswith(""):
                 result_text = result_text[:-3]
             result_text = result_text.strip()
 
@@ -249,7 +249,7 @@ Respond ONLY in this exact JSON format:
                 score_text += f"- {evt.action}: {evt.score_delta:+d}\n"
 
             completion = client.chat.completions.create(
-                model="openai/gpt-oss-120b",
+                model="llama-3.1-8b-instant",
                 messages=[
                     {
                         "role": "system",
@@ -278,9 +278,9 @@ Respond ONLY in this exact JSON format:
             import json
             result_text = completion.choices[0].message.content
             result_text = result_text.strip()
-            if result_text.startswith("```json"):
+            if result_text.startswith("json"):
                 result_text = result_text[7:]
-            if result_text.endswith("```"):
+            if result_text.endswith(""):
                 result_text = result_text[:-3]
             result_text = result_text.strip()
 
@@ -294,6 +294,82 @@ Respond ONLY in this exact JSON format:
                 "pain_points": ["Unable to analyze due to AI error"],
                 "key_strengths": ["Unable to analyze due to AI error"],
                 "recommended_actions": ["Unable to analyze due to AI error"]
+            }
+
+    @classmethod
+    async def evaluate_deal_health(
+        cls, deal_context: str, activities: List, stage_history_text: str
+    ) -> Dict:
+        client = cls.get_client()
+        if not client:
+            return {
+                "health_score": 50,
+                "risk_level": "medium",
+                "risk_factors": ["AI evaluation unavailable: GROQ_API_KEY not set."],
+                "recommended_actions": ["Set up GROQ_API_KEY to retrieve AI insights."],
+                "predicted_close_date": None
+            }
+
+        try:
+            activity_summary = ""
+            if activities:
+                activity_summary = "Recent activities:\n"
+                for act in activities[:5]:
+                    activity_summary += f"- [{act.activity_type}] {act.subject} (completed: {act.is_completed})\n"
+
+            prompt = f"""You are a professional B2B sales forecasting and deal health intelligence expert.
+Analyze this deal details and predict risk level, health score (0-100), and concrete actions to win the deal.
+
+Deal Info:
+{deal_context}
+
+Stage history & activity:
+{stage_history_text}
+{activity_summary}
+
+Respond ONLY in this exact JSON format:
+{{
+  "health_score": 0-100 (where 100 is extremely healthy, ready to sign, and 0 is dead/lost),
+  "risk_level": "low" or "medium" or "high" or "critical",
+  "risk_factors": ["risk factor 1", "risk factor 2"],
+  "recommended_actions": ["action item 1", "action item 2"],
+  "predicted_close_date": "YYYY-MM-DD"
+}}
+"""
+            completion = client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a professional CRM deal health scoring assistant. Evaluate sales risks and return JSON."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0.3,
+                max_tokens=400,
+            )
+
+            import json
+            result_text = completion.choices[0].message.content
+            result_text = result_text.strip()
+            if result_text.startswith("json"):
+                result_text = result_text[7:]
+            if result_text.endswith(""):
+                result_text = result_text[:-3]
+            result_text = result_text.strip()
+
+            return json.loads(result_text)
+        except Exception as e:
+            print(f"DEBUG: Groq API Error: {str(e)}")
+            return {
+                "health_score": 50,
+                "risk_level": "medium",
+                "risk_factors": [f"Analysis failed: {str(e)}"],
+                "recommended_actions": ["Retry the health assessment shortly."],
+                "predicted_close_date": None
             }
 
 

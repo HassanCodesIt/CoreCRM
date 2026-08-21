@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, and_
 from sqlalchemy.orm import selectinload
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict
 from app.models.lead import Lead, LeadActivity, LeadScoreEvent
 from app.models.user import User
 from app.models.contact import Contact
@@ -28,6 +28,7 @@ class LeadService:
     @staticmethod
     async def get_leads(
         db: AsyncSession,
+        tenant_id: str,
         page: int = 1,
         limit: int = 20,
         search: Optional[str] = None,
@@ -39,8 +40,8 @@ class LeadService:
         sort_by: str = "created_at",
         sort_dir: str = "desc"
     ) -> Tuple[List[Lead], int]:
-        offset = (page - 1) * limit
-        query = select(Lead).options(selectinload(Lead.owner)).where(Lead.is_deleted == False)
+        offset = (page -1) * limit
+        query = select(Lead).options(selectinload(Lead.owner)).where(Lead.is_deleted == False, Lead.tenant_id == tenant_id)
 
         if search:
             query = query.where(or_(
@@ -82,7 +83,9 @@ class LeadService:
         return leads, total
 
     @staticmethod
-    async def get_leads_by_stage(db: AsyncSession, owner_id: Optional[str] = None) -> dict:
+    async def get_leads_by_stage(
+        db: AsyncSession, owner_id: Optional[str] = None
+    ) -> Dict[str, List[Lead]]:
         query = select(Lead).options(selectinload(Lead.owner)).where(Lead.is_deleted == False)
         if owner_id:
             query = query.where(Lead.owner_id == owner_id)
@@ -105,12 +108,15 @@ class LeadService:
         return stages
 
     @staticmethod
-    async def get_lead_by_id(db: AsyncSession, lead_id: str) -> Optional[Lead]:
-        result = await db.execute(
+    async def get_lead_by_id(db: AsyncSession, lead_id: str, tenant_id: str = None) -> Optional[Lead]:
+        query = (
             select(Lead)
             .options(selectinload(Lead.owner), selectinload(Lead.campaign))
             .where(Lead.id == lead_id, Lead.is_deleted == False)
         )
+        if tenant_id:
+            query = query.where(Lead.tenant_id == tenant_id)
+        result = await db.execute(query)
         lead = result.scalar_one_or_none()
         if lead and lead.owner:
             lead.owner_name = lead.owner.full_name
@@ -118,10 +124,11 @@ class LeadService:
         return lead
 
     @staticmethod
-    async def create_lead(db: AsyncSession, data: LeadCreate, owner_id: str) -> Lead:
+    async def create_lead(db: AsyncSession, data: LeadCreate, owner_id: str, tenant_id: str) -> Lead:
         lead = Lead(
             id=str(uuid.uuid4()),
             owner_id=owner_id,
+            tenant_id=tenant_id,
             **data.model_dump()
         )
         db.add(lead)
@@ -130,17 +137,21 @@ class LeadService:
         return lead
 
     @staticmethod
-    async def update_lead(db: AsyncSession, lead_id: str, data: LeadUpdate) -> Optional[Lead]:
-        lead = await LeadService.get_lead_by_id(db, lead_id)
+    async def update_lead(db: AsyncSession, lead_id: str, data: LeadUpdate, tenant_id: str) -> Optional[Lead]:
+        lead = await LeadService.get_lead_by_id(db, lead_id, tenant_id)
         if not lead:
             return None
 
+        old_values = {k: getattr(lead, k) for k, v in data.model_dump(exclude_none=True).items()}
         for k, v in data.model_dump(exclude_none=True).items():
             setattr(lead, k, v)
 
         lead.updated_at = datetime.utcnow()
         await db.commit()
         await db.refresh(lead)
+        # Audit
+        from app.services.audit_service import log_event
+        await log_event(db, tenant_id, lead.owner_id, "lead", lead.id, "updated", new_values=data.model_dump(exclude_none=True), old_values=old_values)
         return lead
 
     @staticmethod
@@ -160,14 +171,17 @@ class LeadService:
         return lead
 
     @staticmethod
-    async def delete_lead(db: AsyncSession, lead_id: str) -> bool:
-        lead = await LeadService.get_lead_by_id(db, lead_id)
+    async def delete_lead(db: AsyncSession, lead_id: str, tenant_id: str) -> bool:
+        lead = await LeadService.get_lead_by_id(db, lead_id, tenant_id)
         if not lead:
             return False
 
         lead.is_deleted = True
         lead.updated_at = datetime.utcnow()
         await db.commit()
+        # Audit
+        from app.services.audit_service import log_event
+        await log_event(db, tenant_id, lead.owner_id, "lead", lead.id, "deleted")
         return True
 
     @staticmethod
@@ -210,12 +224,13 @@ class LeadService:
         return result.scalars().all()
 
     @staticmethod
-    async def update_score(db: AsyncSession, lead_id: str, action: str, created_by: Optional[str] = None) -> Optional[Lead]:
+    async def update_score(db: AsyncSession, lead_id: str, action: str, score_delta: Optional[int] = None, created_by: Optional[str] = None) -> Optional[Lead]:
         lead = await LeadService.get_lead_by_id(db, lead_id)
         if not lead:
             return None
 
-        score_delta = LeadService.SCORE_ACTIONS.get(action, 0)
+        if score_delta is None:
+            score_delta = LeadService.SCORE_ACTIONS.get(action, 0)
 
         score_event = LeadScoreEvent(
             id=str(uuid.uuid4()),
